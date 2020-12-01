@@ -6,7 +6,7 @@ Frontend: .NET Core - Blazor WASM PWA
 
 "Supported" browser: Chrome
 
-# Starting the server
+# How to setup and play
 
 ## Prerequisites
 - latest .NET Core SDK (3.2+)
