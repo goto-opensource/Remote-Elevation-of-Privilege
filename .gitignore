@@ -1,0 +1,9 @@
+.vs
+.vscode
+**/bin
+**/obj
+**/PublishProfiles
+**/ServiceDependencies
+**/*.csproj.user
+**/*.log
+**/.config

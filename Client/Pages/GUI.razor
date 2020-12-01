@@ -1,0 +1,1491 @@
+﻿@page "/"
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+
+
+<div style="position: relative; margin: auto; width: 100vmax; height: 50.45vmax;  max-width: 198vh; max-height: 100vh; background: rgb(235,244,248);">
+
+    @if (gameEnded)
+    {
+        <div id="winnerModal" style="display: block; position: absolute; z-index: 3; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); ">
+            <div class="c-layer" style="background-color: #fefefe; height:60%; margin: 5% 5%; border: 1px solid #888; width: 90%; border-radius: 15px;">
+                <div class="c-layer c-layer--text" style="width: 100%; height: 50%; top: 25%; left: 0px; justify-content: flex-start;">
+                    <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: center; padding-bottom: 0px;">Game finished, winner is: @winner</p>
+                    @if (owner)
+                    {
+                        <button type="button" @onclick="Export" class="c-layer c-layer--group" style="        width: 20%;
+        height: 15%;
+        top: 40%;
+        left: 40%;
+        background: rgb(255, 208, 90);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                            Export session
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <div @onclick="@(() => { zoomCardDisplay = "none"; StateHasChanged(); })" id="zoomCardModal" style="display: @zoomCardDisplay; position: absolute; z-index: 5; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgba(0,0,0,0.4); ">
+        <div class="c-layer c-layer--image" style="border-style: solid; border-radius: 15px; border-width: 4px; border-color: black; width: 24%; height: 80%; top: 10%; left: 38%; background-image: url(@zoomCard); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+    </div>
+
+    <div onclick="closeModal(event, 'whiteboardModal')" id="whiteboardModal" style="display: @whiteBoardDisplay; position: absolute; z-index: 3; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); ">
+        <div class="c-layer" style="background-color: #fefefe; height:90%; top: 5%; left: 5%; border: 1px solid #888; width: 90%; border-radius: 15px;">
+            <div class="c-layer c-layer--text" style="width: 100%; height: 5%; top: 2%; left: 0px; justify-content: flex-start;">
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: center; padding-bottom: 0px;">Whiteboard</p>
+            </div>
+            <div style="display:flex; justify-content: center; height: 90%; top:8%; width:100%;">
+                @if (whiteboard == null && owner)
+                {
+                    <input type="file" @ref="_input" @onchange="UploadWhiteboard" accept=".jpg, .jpeg, png" class="c-layer c-layer--group" style="width: 10%; height: 4%; top: 45%; left: 10%;" />
+                }
+                else if (whiteboard == null)
+                {
+                    <div @onclick="DownloadWhiteboard" class="c-layer c-layer--group" style="width: 40%; height: 90%; top: 5%; left: 60%;">
+                        <div class="c-layer c-layer--shape-path" style="width: 90%; height: 80%; top: 0px; left: 0%; background: rgb(8, 128, 174); border-radius: 6px; box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;"></div>
+                        <div class="c-layer c-layer--text" style="width: 100%; height: 75%; top: 20%; left: 0px; justify-content: flex-start;">
+                            <p class="c-layer__text" style="color: rgb(235, 244, 248); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: center; padding-bottom: 0px;">Try to download whiteboard</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <img class="c-layer" src="@whiteboard" style="max-height:80%; top:10%; margin-left:auto; margin-right:auto; display: block;" />
+                }
+            </div>
+        </div>
+    </div>
+
+    <div onclick="closeModal(event, 'helpMenuModal')" id="helpMenuModal" style="display: none; position: absolute; z-index: 3; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); ">
+        <div class="c-layer" style="background-color: #fefefe; height:90%; top: 5%; left: 5%; border: 1px solid #888; width: 90%; border-radius: 15px;">
+            <div class="c-layer c-layer--text" style="width: 100%; height: 5%; top: 2%; left: 0px; justify-content: flex-start;">
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: center; padding-bottom: 0px;">Rules and mechanics:</p>
+            </div>
+            @for (int i = 1; i < 5; ++i)
+            {
+                var filename = $"instructions_deck/instructions-0{i}.jpg";
+                var leftDst = $"{(i - 1) * 23.3 + 5}%";
+                <div @onclick="@(() => { zoomCard = filename; zoomCardDisplay = "block"; StateHasChanged(); })" class="c-layer c-layer--image" style="border-style: solid; border-radius: 15px; border-width: 1px; border-color: black; width: 20%; height: 65%; top: 5%; left: @leftDst; background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+            }
+            <div class="c-layer c-layer--text" style="width: 42.5%; height: 23%; top: 72%; left: 5%; justify-content: flex-start; text-align:left;">
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 2.5vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom:0.8vh;">
+                    During session creation the owner decides if he wants to play or just moderate.
+                </p>
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 2.5vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom:0.8vh;">
+                    The current player is elevated from the avatars (on the bottom).
+                </p>
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 2.5vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom:0.8vh;">
+                    After raising the card players can riff threats on the currently raised card (highlighted in thicker black borders).
+                </p>
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 2.5vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom:0.8vh;">
+                    The current "highest" card is highlighted in thick gold border. Raiser of this card will choose next Suit.
+                </p>
+            </div>
+            <div class="c-layer c-layer--text" style="width: 42.5%; height: 23%; top: 72%; left: 47.5%; justify-content: flex-start; text-align:left;">
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 2.5vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom:0.8vh;">
+                    To indicate which suits were already discussed, the card symbolizing the suit is inverted in colors. You can choose them again, this is purely cosmetic.
+                </p>
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 2.5vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom:0.8vh;">
+                    If You are the owner, you can skip a player any time - by pressing Next player. Graying out the button is cosmetic - this is to work around if a player disconnects for any reason.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- HAND MODAL -->
+    <div onclick="closeModal(event, 'handModal')" id="handModal" style="display: none; position: absolute; z-index: 3; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); ">
+        <div class="c-layer" style="background-color: #fefefe; height:60%; margin: 5% 5%; border: 1px solid #888; width: 90%; border-radius: 15px;">
+            @for (int i = 0; i < Math.Min(5, player.Hand.Count); i++)
+            {
+                var card = player.Hand[handOffset + i];
+                var filename = "deck/" + card.Suit.ToString().ToLower() + card.Value.ToString() + ".jpg";
+                var left = $"{6 + (i * 18)}%";
+                var border = selectedCard?.Equals(card) ?? false ? 3 : 1;
+                if (currentSuit != card.Suit && card.Suit != Suit.ElevationOfPrivilege && player.Hand.Cards.Any(card => card.Suit == currentSuit))
+                {
+                    <div class="c-layer c-layer--image" style="filter: grayscale(100%); border-style: solid; border-radius: 15px; border-width: @(border) px; border-color: black; width: 16%; height: 80%; top: 5%; left: @(left); background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                }
+                else
+                {
+                    <div @onclick="@(e => { selectedCard = card; })" class="c-layer c-layer--image" style="border-style: solid; border-radius: 15px; border-width: @(border)px; border-color: black; width: 16%; height: 80%; top: 5%; left: @(left); background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                }
+            }
+            <div @onclick="() => { if (handOffset > 0) handOffset--; }" class="c-layer c-layer--group" style="width: 30px; height: 30px; top: 50%; left: 3%;">
+                <div class="c-layer c-layer--group" style="width: 14px; height: 10px; top: 7.50005e-11px; left: 3.74998e-11px; overflow: hidden; mask: url(&quot;svgs/AE9B370D-A6E2-400F-9F6E-3C513B2DF0D3.svg&quot;); -webkit-mask-box-image-source: url(&quot;svgs/AE9B370D-A6E2-400F-9F6E-3C513B2DF0D3.svg&quot;); -webkit-mask-box-image-slice: 100 100 0 0 fill; -webkit-mask-box-image-width: initial; -webkit-mask-box-image-outset: initial; -webkit-mask-box-image-repeat: stretch;">
+                    <div class="c-layer c-layer--shape" style="width: 14px; height: 10px; top: 7.50005e-11px; left: 7.49996e-11px; background-image: url(&quot;svgs/AE9B370D-A6E2-400F-9F6E-3C513B2DF0D3.svg&quot;); background-repeat: no-repeat; background-position: center center;"></div>
+                    <div class="c-layer c-layer--group" style="width: 30px; height: 30px; top: 0px; left: 0px;">
+                        <div class="c-layer c-layer--shape-path" style="width: 30px; height: 30px; top: 0px; left: 0px; background: rgb(8, 128, 174);"></div>
+                    </div>
+                </div>
+            </div>
+            <div @onclick="() => { if (handOffset < player.Hand.Count - 5) handOffset++; }" class="c-layer c-layer--group" style="width: 30px; height: 30px; top: 50%; left: 97%;">
+                <div class="c-layer c-layer--group" style="width: 14px; height: 10px; top: 7.50005e-11px; left: -1.25e-08px; overflow: hidden; mask: url(&quot;svgs/2FC8B950-2A09-4E02-86B6-E574FAF5D8D4.svg&quot;); -webkit-mask-box-image-source: url(&quot;svgs/2FC8B950-2A09-4E02-86B6-E574FAF5D8D4.svg&quot;); -webkit-mask-box-image-slice: 100 100 0 0 fill; -webkit-mask-box-image-width: initial; -webkit-mask-box-image-outset: initial; -webkit-mask-box-image-repeat: stretch;">
+                    <div class="c-layer c-layer--shape" style="width: 14px; height: 10px; top: 7.50005e-11px; left: 0px; background-image: url(&quot;svgs/2FC8B950-2A09-4E02-86B6-E574FAF5D8D4.svg&quot;); background-repeat: no-repeat; background-position: center center;"></div>
+                    <div class="c-layer c-layer--group" style="width: 30px; height: 30px; top: 0px; left: 0px;">
+                        <div class="c-layer c-layer--shape-path" style="width: 30px; height: 30px; top: 0px; left: 0px; background: rgb(8, 128, 174);"></div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="document.getElementById('handModal').style.display = 'none'" id="1EB1BC2C-736F-49C7-972D-C63B13FFB29B" class="c-layer c-layer--group" style="        width: 20%;
+        height: 5%;
+        top: 90%;
+        left: 40%;
+        background: rgb(8, 128, 174);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                Select card
+            </button>
+        </div>
+    </div>
+
+    <div onclick="closeModal(event, 'playerList')" id="playerList" style="display: none; position: absolute; z-index: 3; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); ">
+        <div class="c-layer" style="background-color: #fefefe; height:60%; margin: 5% 5%; border: 1px solid #888; width: 90%; border-radius: 15px;">
+            <div style="width:90%;height:90%; margin: auto;">
+                <div style="width: 100%; height:20%;color: rgb(8, 128, 174); font-family: Helvetica; font-size:3.96vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                    Share this SessionID to allow spectators to join: @sessionID
+                </div>
+                <div style="width: 100%; height:40%;top:20%;">
+                    <div style="width: 100%; height:25%;color: rgb(8, 128, 174); font-family: Helvetica; font-size:2.97vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                        Players:
+                    </div>
+                    <div style="width:100%; height:75%; top: 25%;color: rgb(8, 128, 174); font-family: Helvetica; font-size:2.4vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                        @foreach (var p in players)
+                        {
+                            @(p + ", ")
+                        }
+                    </div>
+                </div>
+                @if (spectators.Count > 0)
+                {
+                    <div style="width: 100%; height:40%; top: 60%;">
+                        <div style="width: 100%; height:25%;color: rgb(8, 128, 174); font-family: Helvetica; font-size:2.97vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                            Spectators:
+                        </div>
+                        <div style="width:100%; height:75%; top: 25%;color: rgb(8, 128, 174); font-family: Helvetica; font-size:2.4vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                            @foreach (var s in spectators)
+                            {
+                                @(s + ", ")
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- CHANGE SUIT MODAL -->
+    @if (changingSuit)
+    {
+        var i = 0;
+        <div id="changeSuitModal" style="display: block; position: absolute; z-index: 3; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); ">
+            <div class="c-layer" style="background-color: #fefefe; height:60%; margin: 5% 5%; border: 1px solid #888; width: 90%; border-radius: 15px;">
+                <div class="c-layer c-layer--text" style="width: 100%; height: 5%; top: 2%; left: 0px; justify-content: flex-start;">
+                    <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: center; padding-bottom: 0px;">You won the round, choose a suit!</p>
+                </div>
+                @foreach (Suit suit in (Suit[])Enum.GetValues(typeof(Suit)))
+                {
+                    var filename = "deck/" + suit.ToString().ToLower() + "_A" + ".jpg";
+                    var left = $"{1.5 + (i * 14)}%";
+                    i++;
+                    var border = currentSuit == suit ? 3 : 1;
+                    var invertness = chosenSuits.Contains(suit) ? 100 : 0;
+                    <div @onclick="() => { currentSuit = suit; }" class="c-layer c-layer--image" style="filter: invert(@(invertness)%); border-style: solid; border-radius: 15px; border-width: @(border)px; border-color: black; width: 13%; height: 65%; top: 10%; left: @(left); background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                }
+
+                <button type="button" @onclick="ChangeSuit" class="c-layer c-layer--group" style="        width: 20%;
+        height: 5%;
+        top: 90%;
+        left: 40%;
+        background: rgb(8, 128, 174);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                    Select suit
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (forcingSuit)
+    {
+        var i = 0;
+        <div @onclick="() => { forcingSuit = false; StateHasChanged(); }" id="forceSuitModal" style="display: block; position: absolute; z-index: 3; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); ">
+            <div class="c-layer" style="background-color: #fefefe; height:60%; margin: 5% 5%; border: 1px solid #888; width: 90%; border-radius: 15px;">
+                @foreach (Suit suit in (Suit[])Enum.GetValues(typeof(Suit)))
+                {
+                    var filename = "deck/" + suit.ToString().ToLower() + "_A" + ".jpg";
+                    var left = $"{1.5 + (i * 14)}%";
+                    i++;
+                    var border = currentSuit == suit ? 3 : 1;
+                    var invertness = chosenSuits.Contains(suit) ? 100 : 0;
+                    <div @onclick="() => { currentSuit = suit; }" class="c-layer c-layer--image" style="filter: invert(@(invertness)%); border-style: solid; border-radius: 15px; border-width: @(border)px; border-color: black; width: 13%; height: 65%; top: 10%; left: @(left); background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                }
+
+                <button type="button" @onclick="ForceSuit" class="c-layer c-layer--group" style="        width: 20%;
+        height: 5%;
+        top: 90%;
+        left: 40%;
+        background: rgb(8, 128, 174);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                    Force suit
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- HEADER -->
+    <div class="c-layer c-layer--shape-path" style="width: 100%; height: 5.5%; top: 0px; left: 0px; background: rgb(15, 132, 177);">
+        <div class="c-layer c-layer--shape" style="width: 3%; height: 90%; top: 0px; left: 0%; background-image: url(svgs/logo.svg); background-size: 100% 100%; background-repeat: no-repeat; background-position: center center;"></div>
+        <div class="c-layer c-layer--text" style="width: 50%; height: 70%; top: 30%; left: 4%; justify-content: flex-start;">
+            <p class="c-layer__text" style="color: rgb(255, 255, 255); font-family: Roboto; font-size: 1.98vh; font-weight: 500; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">Remote Elevation of Privilege card game (BETA)</p>
+        </div>
+        <button type="button" @onclick="TryRefresh" class="c-layer c-layer--group" style="        width: 6%;
+        height: 90%;
+        top: 5%;
+        left: 40%;
+        background: rgb(255, 0, 0);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(0,0,0);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+            Try recovery
+        </button>
+        <div class="c-layer c-layer--shape-path" style="z-index:3; width: 20%; height: 100%; top: 0px; left: 80%; background: rgb(96, 205, 247);">
+            <div onclick="toggle('helpMenuModal')" class="c-layer c-layer--shape" style="width: 10%; height: 100%; top: 0px; left: 0px; background-image: url(&quot;svgs/E211784C-C458-4585-AFA2-858FEA9E8297.svg&quot;); background-size: 60% 60%; background-repeat: no-repeat; background-position: center center;"></div>
+            <div onclick="toggle('helpMenuModal')" class="c-layer c-layer--text" style="width: 80%; height: 70%; top: 30%; left: 10%; justify-content: flex-start;">
+                <p class="c-layer__text" style="color: rgb(255, 255, 255); font-family: Roboto; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">Help menu</p>
+            </div>
+            @if (owner)
+            {
+                <button type="button" @onclick="FinishAbruptly" class="c-layer c-layer--group" style="        width: 40%;
+        height: 90%;
+        top: 5%;
+        left: 60%;
+        background: @(started ? "rgb(200, 10, 10)" : "rgb(150, 150, 150)" );
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;
+">
+                    End game
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (!insession)
+    {
+        if (willcreate) //Create
+        {
+            <div class="c-layer c-layer--text" style="width: 30%; height: 10%; top: 20%; left: 8%; justify-content: flex-start;">
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Roboto; font-size:5.94vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                    Create a session
+                </p>
+            </div>
+            <div class="c-layer c-layer--group" style="width: 20%; height: 7%; top: 31%; left: 10%;">
+                <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px;">
+                    <div class="c-layer c-layer--text" style="width: 100%; height: 50%; top: 0%; left: 0px; justify-content: flex-start;">
+                        <p class="c-layer__text" style="color: rgb(117, 111, 134); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                            Player name
+                        </p>
+                    </div>
+                    <div class="c-layer c-layer--group" style="width: 100%; height: 50%; top: 50%; left: 0px;">
+                        <input type="text" placeholder="Real name or nickname" @bind="name" class="c-layer c-layer--shape-path" style="border-width: 0px; border-top-width: 0px; border-right-width: 0px; border-bottom-width: 0px; border-left-width: 0px; font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px; width: 100%; height: 100%; top: 0px; left: 0px; background: rgb(255, 255, 255); border-radius: 6px; box-shadow: rgb(219, 226, 234) 0px 0px 0px 1px inset, rgba(44, 39, 56, 0.04) 0px 4px 8px 0px;">
+                    </div>
+                </div>
+            </div>
+            <div class="c-layer c-layer--group" style="width: 20%; height: 4%; top: 40%; left: 10%;">
+                <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px;">
+                    <div class="c-layer c-layer--text" style="width: 100%; height: 50%; top: 0%; left: 0px; justify-content: flex-start;">
+                        <p class="c-layer__text" style="color: rgb(117, 111, 134); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                            <input id="wanttoplay" type="checkbox" @bind="ownerPlaying"> <label for="wanttoplay">I want to play!</label>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <button type="button" @onclick="(() => { if (createPressed < DateTime.Now.AddSeconds(-10)) { CreateSession(); } })" class="c-layer c-layer--group" style="        width: 10%;
+        height: 4%;
+        top: 46%;
+        left: 10%;
+        background-color: rgb(8, 128, 174);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                Create session
+            </button>
+        }
+        else if (willjoin) //Join
+        {
+            <div class="c-layer c-layer--text" style="width: 30%; height: 10%; top: 20%; left: 8%; justify-content: flex-start;">
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Roboto; font-size:5.94vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                    Join a session
+                </p>
+            </div>
+            <div class="c-layer c-layer--group" style="width: 20%; height: 7%; top: 30%; left: 10%;">
+                <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px;">
+                    <div class="c-layer c-layer--text" style="width: 100%; height: 50%; top: 0px; left: 0px; justify-content: flex-start;">
+                        <p class="c-layer__text" style="color: rgb(117, 111, 134); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                            Add name
+                        </p>
+                    </div>
+                    <div class="c-layer c-layer--group" style="width: 100%; height: 50%; top: 50%; left: 0px;">
+                        <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px;">
+                            <input type="text" placeholder="Your real name or nickname" @bind="name" class="c-layer c-layer--shape-path" style="border-width: 0px; border-top-width: 0px; border-right-width: 0px; border-bottom-width: 0px; border-left-width: 0px; font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px; width: 100%; height: 100%; top: 0px; left: 0px; background: rgb(255, 255, 255); border-radius: 6px; box-shadow: rgb(219, 226, 234) 0px 0px 0px 1px inset, rgba(44, 39, 56, 0.04) 0px 4px 8px 0px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="c-layer c-layer--group" style="width: 20%; height: 7%; top: 40%; left: 10%;">
+                <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px;">
+                    <div class="c-layer c-layer--text" style="width: 100%; height: 50%; top: 0%; left: 0px; justify-content: flex-start;">
+                        <p class="c-layer__text" style="color: rgb(117, 111, 134); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                            Session ID to join
+                        </p>
+                    </div>
+                    <div class="c-layer c-layer--group" style="width: 100%; height: 50%; top: 50%; left: 0px;">
+                        <input type="text" placeholder="00112233445566778899AABBCCDDEEFF" @bind="sessionID" class="c-layer c-layer--shape-path" style="border-width: 0px; border-top-width: 0px; border-right-width: 0px; border-bottom-width: 0px; border-left-width: 0px; font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px; width: 100%; height: 100%; top: 0px; left: 0px; background: rgb(255, 255, 255); border-radius: 6px; box-shadow: rgb(219, 226, 234) 0px 0px 0px 1px inset, rgba(44, 39, 56, 0.04) 0px 4px 8px 0px;">
+                    </div>
+                </div>
+            </div>
+            <button type="button" @onclick="(() => { if (joinPressed < DateTime.Now.AddSeconds(-10)) { JoinSession(); joinPressed = DateTime.Now; } })" class="c-layer c-layer--group" style="        width: 8%;
+        height: 4%;
+        top: 50%;
+        left: 10%;
+        background: rgb(8, 128, 174);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                Join session
+            </button>
+
+        }
+        else //WelcomeScreen
+        {
+
+            <div class="c-layer c-layer--text" style="width: 50%; height: 20%; top: 10%; left: 8%; justify-content: flex-start;">
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Roboto; font-size:5.94vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                    Hello,
+                </p>
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Roboto; font-size:2.97vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                    welcome to the Remote Elevation of Privilege card game. To get an overview of the game and the interface, click "Help menu" any time.
+                </p>
+            </div>
+            <div class="c-layer c-layer--text" style="width: 50%; height: 10%; top: 30%; left: 10%; justify-content: flex-start;">
+                <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Roboto; font-size:3.96vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                    Create a session or join an existing!
+                </p>
+            </div>
+            <button type="button" @onclick="(() => willcreate = true)" class="c-layer c-layer--group" style="width: 20%;
+        height: 5%;
+        top: 40%;
+        left: 10%;
+        background: rgb(8, 128, 174);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;
+">
+                Create a session
+            </button>
+            <button type="button" @onclick="@(() => {willjoin = true; sessionID = "";})" class="c-layer c-layer--group" style="        width: 20%;
+        height: 5%;
+        top: 40%;
+        left: 35%;
+        background: rgb(255, 255, 255);
+        border-radius: 6px;
+        box-shadow: rgb(219, 226, 234) 0px 0px 0px 1px inset, rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0) 0px 2px 4px 0px;
+        color: rgb(124, 156, 191);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                Join a session
+            </button>
+        }
+    }
+    else
+    {
+        @if (started) //Gameplay
+        {
+            // partialview-k
+            <!-- SIDEBAR -->
+            <div id="FD6D4D26-BD64-4B48-A3EF-A4E6E937F5DF" class="c-layer c-layer--shape-path" style="width: 20%; height: 94.5%; top: 5.5%; left: 80%; background: rgb(255, 255, 255); box-shadow: rgba(153, 177, 188, 0.71) 0px 2px 4px 0px;">
+
+                <div onclick="document.getElementById('playerList').style.display = 'block'" id="F8EA3151-B78C-4BAB-B42B-92F114EBA3FB" class="c-layer c-layer--group" style="width:96%; height: 5%; top: 0%; left: 2%;">
+                    <div id="DBFC81EF-840A-40A1-9635-3245D26B26EC" class="c-layer c-layer--shape" style="width: 10%; height:80%; top: 0%; left: 1%; background-size: 70% 70%;  background-image: url(&quot;svgs/DBFC81EF-840A-40A1-9635-3245D26B26EC.svg&quot;); background-repeat: no-repeat; background-position: center center;"></div>
+                    <div id="1428B128-96AD-4592-932C-919D92B37961" class="c-layer c-layer--text" style="width:90%; top: 30%; left: 12%; justify-content: flex-start;">
+                        <p class="c-layer__text" style="color: rgb(15, 132, 177); font-family: Roboto; font-size: 1.98vh; font-weight: 700; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">List of players</p>
+                    </div>
+                </div>
+
+                @if (spectating)
+                {
+                    <button type="button" @onclick="TryRecover" class="c-layer c-layer--group" style="        width: 96%;
+        height: 5%;
+        top: 40%;
+        left: 2%;
+        background: rgb(255, 208, 90);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(44, 39, 56);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                        Try session recovery
+                    </button>
+                }
+                else
+                {
+                    @if (owner)
+                    {
+                        <div id="BD1A4B5E-3B12-481A-84EE-ACF471046487" class="c-layer c-layer--group" style="width: 93%; height: 5%; top: 10%; left: 5%;">
+                            <div class="c-layer" style="width: 20%; height: 100%; top: 0%; left: 0%;">
+                                <input id="simmode" type="checkbox" @bind="simplifiedMode">
+                            </div>
+                            <div class="c-layer" style="width: 80%; height: 100%; top: -7%; left: 9%;">
+                                <label style="color: rgb(15, 132, 177); font-family: Roboto; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;" for="simmode">Simplified mode</label>
+                            </div>
+                        </div>
+                    }
+                    @if ((!owner && !spectating) || (owner && ownerPlaying))
+                    {
+
+                        <div id="E7E0EB63-F10B-43A4-95A1-36B3871D50D7" class="c-layer c-layer--group" style="width: 96%; height: 5%; top: 5%; left: 2%;">
+                            <div id="76355635-734B-4088-ADED-684E68EA47A1" class="c-layer c-layer--text" style="width: 90%; height: 1.98vh; top: 2%; left: 12%; justify-content: flex-start;">
+                                <p class="c-layer__text" style="color: rgb(15, 132, 177); font-family: Roboto; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">Coins: @player.Coins</p>
+                            </div>
+                            <div id="1340C728-1552-4877-9841-CC361406E274" class="c-layer c-layer--shape-path" style="width: 5%; height: 40%; top: 2%; left: 2%; border-radius: 100%; box-shadow: rgb(15, 132, 177) 0px 0px 0px 1px inset, rgb(15, 132, 177) 0px 0px 0px 1px;"></div>
+                            <div id="ABB7E345-9CDE-479E-A399-217E828E4589" class="c-layer c-layer--shape-path" style="width: 4%; height: 30%; top: 0; left: 5%; background: rgb(255, 255, 255); border-radius: 100%; box-shadow: rgb(15, 132, 177) 0px 0px 0px 1px inset, rgb(15, 132, 177) 0px 0px 0px 1px;"></div>
+                        </div>
+                        <div id="BD1A4B5E-3B12-481A-84EE-ACF471046487" class="c-layer c-layer--group" style="width: 96%; height: 5%; top: 12%; left: 2%;">
+                            <div id="2A1BCA53-C481-4C2D-8396-7EC37D17D144" class="c-layer c-layer--text" style="width: 90%; height: 1.98vh; top: 20%; left: 12%; justify-content: flex-start;">
+                                <p class="c-layer__text" style="color: rgb(15, 132, 177); font-family: Roboto; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">My card</p>
+                            </div>
+                            <div id="DB4E6172-B05D-45D7-A0B8-1419CD3B5A1A" class="c-layer c-layer--shape" style="width: 10%; height: 100%; top: 0px; left: 0px; background-size: 70% 70%; background-image: url(&quot;svgs/DB4E6172-B05D-45D7-A0B8-1419CD3B5A1A.svg&quot;); background-repeat: no-repeat; background-position: center center;"></div>
+                        </div>
+                    }
+
+                    @if (selectedCard != null)
+                    {
+                        <div id="4BD6FD72-01A1-4BF3-A2E4-4FC2613A8FD3" class="c-layer c-layer--image" style="border-style: solid; border-radius: 15px; border-width: 1px; border-color: black; width: 57%; height: 41%; top: 17%; left: 21%; background-image: url( @($"deck/{selectedCard.Suit.ToString().ToLower()}{selectedCard.Value.ToString()}.jpg") ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                    }
+                    @if ((!owner && !spectating) || (owner && ownerPlaying))
+                    {
+                        <button type="button" onclick="document.getElementById('handModal').style.display = 'block'" class="c-layer c-layer--group" style="width: 96%;
+        height: 5%;
+        top: 60%;
+        left: 2%;
+        background: rgb(8, 128, 174);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                            Pick a card
+                        </button>
+                    }
+                    <div class="c-layer c-layer--group" style="width: 96%; height: 20%; top: 65%; left: 2%;">
+                        <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px;">
+                            <div class="c-layer c-layer--group" style="width: 100%; height: 20%; top: 0px; left: 0px;">
+                                <div class="c-layer c-layer--text" style="width: 100%; height: 100%; top: 20%; left: 0px; justify-content: flex-start;">
+                                    <p class="c-layer__text" style="color: rgb(117, 111, 134); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">Describe your threats</p>
+                                </div>
+                            </div>
+                            <div class="c-layer c-layer--group" style="width: 100%; height: 75%; top: 20%; left: 0px;">
+                                <input type="text" placeholder="Threats identified" @bind="comment"
+                                       class="c-layer c-layer--text"
+                                       style="width: 100%; height: 100%; top: 0%; left: 0px; background: rgb(255, 255, 255); border-radius: 6px; box-shadow: 0 0 0 1px rgb(219,226,234) inset, 0px 4px 8px 0px rgba(44,39,56,0.04); color: rgb(124, 156, 191);        font-family: Helvetica;        font-size: 1.98vh;        font-weight: 400;        letter-spacing: 0px;        text-align: left;        vertical-align: text-top;        padding-bottom: 0px;        border-width: 0px;        border-top-width: 0px;        border-right-width: 0px;        border-bottom-width: 0px;        border-left-width: 0px;">
+                            </div>
+                        </div>
+                    </div>
+                    @if (myTurn)
+                    {
+                        <button type="button" @onclick="RaiseCard" class="c-layer c-layer--group" style="        width: 96%;
+        height: 5%;
+        top: 85%;
+        left: 2%;
+        background: @(changingSuit || !myTurn || (selectedCard != null && selectedCard.Value == Value._A && comment == "") ? "rgb(150, 150, 150)" : "rgb(8, 128, 174)" );
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;
+">
+                            Submit
+                        </button>
+                    }
+                    else if (riffing)
+                    {
+                        <button type="button" @onclick="IdentifyThreat" class="c-layer c-layer--group" style="        width: 96%;
+        height: 5%;
+        top: 85%;
+        left: 2%;
+        background: @((changingSuit || comment == "") ? "rgb(150, 150, 150)" : "rgb(8, 128, 174)" );
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;
+">
+                            Riff a threat
+                        </button>
+                    }
+                }
+                <div onclick="toggle('whiteboardModal')" class="c-layer c-layer--group" style="width: 96%; height: 5%; top: 90%; left: 2%;">
+                    <div class="c-layer c-layer--shape-path" style="width: 100%; height: 100%; top: 0px; left: 0px; background: rgb(235, 244, 248);"></div>
+                    <div class="c-layer c-layer--shape-path" style="width: 100%; height: 100%; top: 0px; left: 0px;"></div>
+                    <div class="c-layer c-layer--group" style="width: 10%; height: 80%; top: 20%; left: 0%; overflow: hidden; mask: url(&quot;svgs/21D362E2-11EF-4872-A11B-5AE518607CAE.svg&quot;); -webkit-mask-box-image-source: url(&quot;svgs/21D362E2-11EF-4872-A11B-5AE518607CAE.svg&quot;); -webkit-mask-box-image-slice: 100 100 0 0 fill; -webkit-mask-box-image-width: initial; -webkit-mask-box-image-outset: initial; -webkit-mask-box-image-repeat: stretch;">
+                        <div class="c-layer c-layer--shape" style="width: 100%; height: 100%; top: 0%; left: 0%; background-image: url(&quot;svgs/21D362E2-11EF-4872-A11B-5AE518607CAE.svg&quot;); background-repeat: no-repeat; background-position: center center;"></div>
+                        <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0%; left: 0%;">
+                            <div class="c-layer c-layer--shape-path" style="width: 100%; height: 100%; top: 0px; left: 0px; background: rgb(8, 128, 174);"></div>
+                        </div>
+                    </div>
+                    <div class="c-layer c-layer--text" style="width: 85%; height: 70%; top: 30%; left: 15%; justify-content: flex-start;">
+                        <p class="c-layer__text" style="color: rgb(15, 132, 177); font-family: Roboto; font-size: 1.98vh; font-weight: 700; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">Whiteboard</p>
+                    </div>
+                </div>
+                @if (owner)
+                {
+                    <button type="button" @onclick="() => { AdvanceRound(); }" class="c-layer c-layer--group" style="        width: 47%;
+        height: 4.5%;
+        top: 95.5%;
+        left: 2%;
+        background: @(riffing ? "rgb(200, 10, 10)" : "rgb(150, 150, 150)" ); border-radius: 6px; box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                        Next player
+                    </button>
+                    <button type="button" @onclick="() => { forcingSuit = true; }" class="c-layer c-layer--group" style="        width: 47%;
+        height: 4.5%;
+        top: 95.5%;
+        left: 51%;
+        background: rgb(255, 133, 0);
+        border-radius: 6px; box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                        Force suit
+                    </button>
+                }
+            </div>
+
+            <!-- PLAYERS -->
+            <div class="c-layer c-layer--group" style="width: 77%; height: 20%; top: 75%; left: 3%;">
+                <style>
+                    @@keyframes notification {
+                        0% {
+                            background-color: rgba(255,0,0, 0.7);
+                        }
+
+                        50% {
+                            background-color: rgba(255,255,255, 0.7);
+                        }
+
+                        100% {
+                            background-color: rgba(255,0,0, 0.7);
+                        }
+                    }
+
+                    .plus-button {
+                        border: 1px solid lightgrey;
+                        background-color: #68d000;
+                        font-size: 4vh;
+                        height: 100%;
+                        width: 100%;
+                        border-radius: 100%;
+                        position: relative;
+                        color: rgb(86, 86, 86)
+                    }
+                </style>
+                @for (int i = 0; i < this.players.Count; i++)
+                {
+                    int playerIndex = i;
+                    var p = players[playerIndex];
+                    var left = 3 + playerIndex * (80 / (this.players.Count + 1));
+                    uint avatarnumber = 1 + (uint)p.GetHashCode() % 8;
+                    int j = 0;
+                    bool hasIssueRaised = owner ? issues.Any(iss => iss.Key.Player == playerIndex) : issuesCommon.Any(iss => iss.Key.Player == playerIndex);
+                    <!-- tooltip -->
+                    @if (owner)
+                    {
+                        <div id="@($"tooltip{playerIndex}")" style="position: fixed; background-color: rgba(0,0,0,0.4);  z-index: 4; display: none; width: 100vmax; height: 50.45vmax;  max-width: 198vh; max-height: 100vh;top: 0vh; left: 0vw;" onclick="closeModal(event, '@($"tooltip{playerIndex}")')">
+                            <div style="position: absolute; background-color: rgb(44,39,56); z-index: 4; border-radius: 8px; left: @(0.77 * left)%; top: 48%; width: 40%; height: 20%; overflow:auto;">
+                                @foreach (var issue in issues)
+                                {
+
+                                    if (playerIndex == issue.Key.Player)
+                                    {
+                                        <div title="@(issue.Key)" class="c-layer c-layer--image" style="position: absolute; width: 5%; height: 24%; top: @($"{j++ * 25}%"); left: 2%; background-image: @($"url(deck/{issue.Key.Card.Suit.ToString().ToLower()}{issue.Key.Card.Value}.jpg)"); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                                        <p style="position: absolute; width: 50%; height: 25%; left: 10%; top: @($"{(j - 1) * 25}%"); color: rgb(255, 255, 255); font-family: Roboto; font-size: 1.6vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                                            @issue.Value
+                                        </p>
+                                        <button type="button" @onclick="@(() => AwardThreat(issue.Key))" class="c-layer c-layer--group" style="width: 18%;
+        height: 20%;
+        top: @($"{2.5 + (j - 1) * 25}%");
+        right: 20%;
+        background: rgb(37, 213, 36);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;
+">
+                                            Award
+                                        </button>
+                                        <button type="button" @onclick="@(() => DismissThreatAdmin(issue.Key))" class="c-layer c-layer--group" style="width: 18%;
+        height: 20%;
+        top: @($"{2.5 + (j - 1) * 25}%");
+        right: 0%;
+        background: rgb(222, 55, 55);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                                            Dismiss
+                                        </button>
+                                    }
+
+                                }
+                                <div style="position: absolute; top:92%; left:0%; width: 20%; height:20%; background-image: url(svgs/1965F3E5-765D-4829-9285-F4B08057683C.svg); background-repeat: no-repeat; background-position: center center;"></div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div id="@($"tooltip{playerIndex}")" style="position: fixed; background-color: rgba(0,0,0,0.4);  z-index: 4; display: none; width: 100vmax; height: 50.45vmax;  max-width: 198vh; max-height: 100vh; top: 0vh; left: 0vw;" onclick="closeModal(event, '@($"tooltip{playerIndex}")')">
+                            <div style="position: absolute; background-color: rgb(44,39,56); z-index: 4; border-radius: 8px; left: @(0.77 * left)%; top: 48%; width: 40%; height: 20%;overflow:auto;">
+                                @foreach (var issue in issuesCommon)
+                                {
+                                    if (issue.Key.Player == playerIndex)
+                                    {
+                                        <div title="@(issue.Key.Card.ToString())" class="c-layer c-layer--image" style="position: absolute; width: 5%; height: 24%; top: @($"{j++ * 25}%"); left: 2%; background-image: @($"url(deck/{issue.Key.Card.Suit.ToString().ToLower()}{issue.Key.Card.Value}.jpg)"); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                                        <p style="position: absolute; width: 50%; height: 25%; left: 10%; top: @($"{(j - 1) * 25}%"); color: rgb(255, 255, 255); font-family: Roboto; font-size: 1.6vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                                            @issue.Value
+                                        </p>
+
+                                        <div @onclick="@(() => DismissThreat(issue.Key))" class="c-layer c-layer--group" style="width: 20%; height: 20%; top: @($"{2.5 + (j - 1) * 25}%"); right: 0%;">
+                                            <div class=" c-layer c-layer--shape-path" style="width: 60%; height: 80%; top: 0px; left: 20%; background: rgb(222, 55, 55); border-radius: 6px; box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;"></div>
+                                            <div class="c-layer c-layer--text" style="width: 100%; height: 100%; top: 20%; left: 0px; justify-content: flex-start;">
+                                                <p class="c-layer__text" style="color: rgb(235, 244, 248); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: center; padding-bottom: 0px;">Dismiss</p>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                <div style="position: absolute; top:92%; left:0%; width: 20%; height:20%; background-image: url(svgs/1965F3E5-765D-4829-9285-F4B08057683C.svg); background-repeat: no-repeat; background-position: center center;"></div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- CARD -->
+                    <div onclick="toggle('@($"tooltip{playerIndex}")')" title="@p" class="c-layer c-layer--group" style="width: 8%; height: 100%; top: @(playerIndex == currentPlayerIndex ? "-20%" : "0%"); left: @(left)%;">
+                        <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px; border-radius: 15px; overflow: hidden;">
+                            <div class="c-layer c-layer--shape-path" style="width: 100%; height: 100%; top: 0px; left: 0px; background: rgb(216, 216, 216); border-radius: 15px;"></div>
+                            <div class="c-layer c-layer--image" style="width: 100%; height: 100%; top: 0; left: 0px; background-image: url(&quot;deck/back.png&quot;); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                        </div>
+                    </div>
+                    <!-- AVATAR -->
+                    <div onclick="toggle('@($"tooltip{playerIndex}")')" title="@p" class="c-layer c-layer--group" style="width: 3%; height: 22%; top: @(playerIndex == currentPlayerIndex ? "-25%" : "-5%"); left: @(left)%;">
+                        <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px; border-color: #000000; border-width: 1px; border-style:solid; border-radius: 100%; overflow: hidden;">
+                            <div class="c-layer c-layer--shape-path" style="width: 100%; height: 100%; top: 0px; left: 0px; background: rgb(255, 255, 255); border-radius: 100%;"></div>
+                            <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px;">
+                                @if (hasIssueRaised)
+                                {
+                                    <div class="c-layer c-layer--shape-path" style="width: 100%; height: 100%; top: 0px; left: 0px; animation-name: notification; animation-duration: 2s; animation-iteration-count: infinite; "></div>
+                                }
+                                else
+                                {
+                                    <div class="c-layer c-layer--shape-path" style="width: 100%; height: 100%; top: 0px; left: 0px; background: rgb(255, 255, 255);"></div>
+                                }
+                                <div class="c-layer c-layer--image" style="width: 80%; height: 80%; top: 20%; left: 0px; background-image: url(bigavatars/@(avatarnumber).png); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (simplifiedMode)
+                    {
+                        <!-- PLUSBUTTON -->
+                        <div class="c-layer c-layer--group" style="width: 3%; height: 22%; top: @(playerIndex == currentPlayerIndex ? "-25%" : "-5%"); left: @(left+5)%;">
+                            <button @onclick="()=> { AwardThreatSimplified(playerIndex); }" class="plus-button">+</button>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- TABLE -->
+            <div class="c-layer c-layer--group" style="width: 80%; height: 35%; top: 11%; left: 0%;">
+                @for (int i = 0; i < Math.Min(6, playedCards.Count); i++)
+                {
+                    var card = playedCards[deskOffset + i];
+                    var filename = "deck/" + card.Suit.ToString().ToLower() + card.Value.ToString() + ".jpg";
+                    var leftSrc = $"{6 + ((i - 1) * 15)}%";
+                    var leftDst = $"{6 + (i * 15)}%";
+                    <style>
+                    @if (i == 0)
+                    {
+                        @($"@keyframes {card}_{i}anim {{ from {{ left: {leftDst}; top: 110%}} to {{ left: {leftDst}; top: 0%; }} }}")
+                    }
+                    else
+                    {
+                        @($"@keyframes {card}_{i}anim {{ from {{ left: {leftSrc}; }} to {{ left: {leftDst}; }} }}")
+                    }
+                    </style>
+                    if (card.Equals(currentlyRaisedCard))
+                    {
+                        if (card.Equals(currentHighest))
+                        {
+                            <div @onclick="@(() => { zoomCard = filename; zoomCardDisplay = "block"; StateHasChanged(); })" id="@($"{card}_{i}")" class="c-layer c-layer--image" style="border-style: solid; border-radius: 15px; border-width: 4px; border-color: gold; width: 14%; height: 100%; top: 0%; left: @leftDst; animation-name: @($"{card}_{i}anim"); animation-duration: 1s; background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                        }
+                        else
+                        {
+                            <div @onclick="@(() => { zoomCard = filename; zoomCardDisplay = "block"; StateHasChanged(); })" id="@($"{card}_{i}")" class="c-layer c-layer--image" style="border-style: solid; border-radius: 15px; border-width: 4px; border-color: black; width: 14%; height: 100%; top: 0%; left: @leftDst; animation-name: @($"{card}_{i}anim"); animation-duration: 1s; background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                        }
+                    }
+                    else
+                    {
+                        if (card.Equals(currentHighest))
+                        {
+                            <div @onclick="@(() => { zoomCard = filename; zoomCardDisplay = "block"; StateHasChanged(); })" id="@($"{card}_{i}")" class="c-layer c-layer--image" style="border-style: solid; border-radius: 15px; border-width: 4px; border-color: gold; width: 14%; height: 100%; top: 0%; left: @leftDst; animation-name: @($"{card}_{i}anim"); animation-duration: 1s; background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                        }
+                        else
+                        {
+                            <div @onclick="@(() => { zoomCard = filename; zoomCardDisplay = "block"; StateHasChanged(); })" id="@($"{card}_{i}")" class="c-layer c-layer--image" style="border-style: solid; border-radius: 15px; border-width: 1px; border-color: black; width: 14%; height: 100%; top: 0%; left: @leftDst; animation-name: @($"{card}_{i}anim"); animation-duration: 1s; background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                        }
+                    }
+
+                }
+
+                <div @onclick="() => { if (deskOffset > 0) deskOffset--; }" class="c-layer c-layer--group" style="width: 30px; height: 30px; top: 50%; left: 3%;">
+                    <div class="c-layer c-layer--group" style="width: 14px; height: 10px; top: 7.50005e-11px; left: 3.74998e-11px; overflow: hidden; mask: url(&quot;svgs/AE9B370D-A6E2-400F-9F6E-3C513B2DF0D3.svg&quot;); -webkit-mask-box-image-source: url(&quot;svgs/AE9B370D-A6E2-400F-9F6E-3C513B2DF0D3.svg&quot;); -webkit-mask-box-image-slice: 100 100 0 0 fill; -webkit-mask-box-image-width: initial; -webkit-mask-box-image-outset: initial; -webkit-mask-box-image-repeat: stretch;">
+                        <div class="c-layer c-layer--shape" style="width: 14px; height: 10px; top: 7.50005e-11px; left: 7.49996e-11px; background-image: url(&quot;svgs/AE9B370D-A6E2-400F-9F6E-3C513B2DF0D3.svg&quot;); background-repeat: no-repeat; background-position: center center;"></div>
+                        <div class="c-layer c-layer--group" style="width: 30px; height: 30px; top: 0px; left: 0px;">
+                            <div class="c-layer c-layer--shape-path" style="width: 30px; height: 30px; top: 0px; left: 0px; background: rgb(8, 128, 174);"></div>
+                        </div>
+                    </div>
+                </div>
+                <div @onclick="() => { if (deskOffset < playedCards.Count - 6) deskOffset++; }" class="c-layer c-layer--group" style="width: 30px; height: 30px; top: 50%; left: 97%;">
+                    <div class="c-layer c-layer--group" style="width: 14px; height: 10px; top: 7.50005e-11px; left: -1.25e-08px; overflow: hidden; mask: url(&quot;svgs/2FC8B950-2A09-4E02-86B6-E574FAF5D8D4.svg&quot;); -webkit-mask-box-image-source: url(&quot;svgs/2FC8B950-2A09-4E02-86B6-E574FAF5D8D4.svg&quot;); -webkit-mask-box-image-slice: 100 100 0 0 fill; -webkit-mask-box-image-width: initial; -webkit-mask-box-image-outset: initial; -webkit-mask-box-image-repeat: stretch;">
+                        <div class="c-layer c-layer--shape" style="width: 14px; height: 10px; top: 7.50005e-11px; left: 0px; background-image: url(&quot;svgs/2FC8B950-2A09-4E02-86B6-E574FAF5D8D4.svg&quot;); background-repeat: no-repeat; background-position: center center;"></div>
+                        <div class="c-layer c-layer--group" style="width: 30px; height: 30px; top: 0px; left: 0px;">
+                            <div class="c-layer c-layer--shape-path" style="width: 30px; height: 30px; top: 0px; left: 0px; background: rgb(8, 128, 174);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            @if (owner) // StartSession
+            {
+                <div class="c-layer c-layer--text" style="width: 70%; height: 10%; top: 10%; left: 8%; justify-content: flex-start;">
+                    <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Roboto; font-size:5.94vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                        You own the session, start it when the players are ready!
+                    </p>
+                </div>
+                <div class="c-layer c-layer--group" style="width: 40%; height: 20%; top: 20%; left: 10%;">
+                    <p class="c-layer__text" style="color: rgb(117, 111, 134); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                        Session ID - share this with the other participants: @sessionID. Keep this a secret for the players (and spectators, who can join after starting the game to watch), as this is used to encrypt your threats, the content of the whiteboard and the player names with end-to-end encryption. It never leaves client side, the sessions are identified by the hash of this value on the server side.
+                    </p>
+                </div>
+                <button type="button" @onclick="StartSession" class="c-layer c-layer--group" style="        width: 8%;
+        height: 5%;
+        top: 40%;
+        left: 10%;
+        background: rgb(8, 128, 174);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color:rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                    Start session
+                </button>
+                <button type="button" @onclick="CopySessionId" class="c-layer c-layer--group" style="        width: 10%;
+        height: 5%;
+        top: 40%;
+        left: 20%;
+        background: rgb(37, 213, 36);
+        border-radius: 6px;
+        box-shadow: rgba(44, 39, 56, 0.08) 0px 4px 8px 0px, rgba(44, 39, 56, 0.08) 0px 2px 4px 0px;
+        color: rgb(235, 244, 248);
+        font-family: Helvetica;
+        font-size: 1.98vh;
+        font-weight: 400;
+        letter-spacing: 0px;
+        text-align: center;
+        padding-bottom: 0px;">
+                    Copy session ID
+                </button>
+                @for (int i = 0; i < this.players.Count; i++)
+                {
+                    var p = players[i];
+                    var left = 10 + i * (80 / (this.players.Count + 1));
+                    uint avatarnumber = 1 + (uint)p.GetHashCode() % 8;
+                    <div style="width: 3%; height: 5.5%; position: absolute; top: 60%; left: @left%;">
+                        <div style="width: 100%; height: 100%;  background: rgb(255, 208, 90) ; border-radius: 100%; position: absolute; z-index: 2;display: block; box-sizing: content-box;">
+                        </div>
+                        <div style="width: 100%; height: 100%; background-image: url(bigavatars/@(avatarnumber).png); background-repeat: no-repeat; background-size: 100% 100%; border-radius: 100%; background-position: center center;position: absolute; z-index: 2;display: block;  box-sizing: content-box;">
+                        </div>
+                        <div style="position: absolute; top: 110%; align-content: center; color: rgb(117, 111, 134); font-family: Helvetica; font-size:3.96vh; font-weight: 400; letter-spacing: 0px; text-align: center; padding-bottom: 0px;">@p</div>
+                    </div>
+                }
+
+            }
+            else // Lobby
+            {
+
+                <div class="c-layer c-layer--text" style="width: 70%; height: 10%; top: 10%; left: 8%; justify-content: flex-start;">
+                    <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Roboto; font-size:5.94vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
+                        Wait for the owner to start the session.
+                    </p>
+                </div>
+                @for (int i = 0; i < this.players.Count; i++)
+                {
+                    var p = players[i];
+                    var left = 10 + i * (80 / (this.players.Count + 1));
+                    uint avatarnumber = 1 + (uint)p.GetHashCode() % 8;
+                    <div style="width: 3%; height: 5.5%; position: absolute; top: 60%; left: @left%;">
+                        <div style="width: 100%; height: 100%;  background: rgb(255, 208, 90) ; border-radius: 100%; position: absolute; z-index: 2;display: block; box-sizing: content-box;">
+                        </div>
+                        <div style="width: 100%; height: 100%; background-image: url(bigavatars/@(avatarnumber).png); background-repeat: no-repeat; background-size: 100% 100%; border-radius: 100%; background-position: center center;position: absolute; z-index: 2;display: block;  box-sizing: content-box;">
+                        </div>
+                        <div style="position: absolute; top: 110%; align-content: center; color: rgb(117, 111, 134); font-family: Helvetica; font-size:3.96vh; font-weight: 400; letter-spacing: 0px; text-align: center; padding-bottom: 0px;">@p</div>
+                    </div>
+                }
+            }
+        }
+    }
+</div>
+
+
+@code{
+    private ElementReference _input;
+    private DateTime createPressed = DateTime.Now.AddSeconds(-10), joinPressed = DateTime.Now.AddSeconds(-10);
+    private string sessionID, winner, whiteboard, name, zoomCard, zoomCardDisplay = "none", whiteBoardDisplay = "none";
+    private bool gameEnded = false, insession = false, willjoin = false, willcreate = false, spectating = false, started = false, ownerPlaying = false;
+    private int deskOffset = 0, handOffset = 0, currentPlayerIndex = 0;
+    private List<string> spectators = new List<string>();
+    private List<string> players = new List<string>();
+    private List<Card> playedCards = new List<Card>();
+    private Player player = new Player();
+    private HubConnection hubConnection;
+    private bool owner = false;
+    private Card selectedCard;
+    private Card currentlyRaisedCard;
+    private Card currentHighest;
+    private bool myTurn = false;
+    private bool riffing = false;
+    private bool changingSuit = false;
+    private bool forcingSuit = false;
+    private bool simplifiedMode = false;
+    private string comment = "";
+    private string actualUserid = "";
+    private Suit currentSuit = Suit.Tampering;
+    private ConcurrentDictionary<Issue, string> issues = new ConcurrentDictionary<Issue, string>();
+    private ConcurrentDictionary<Issue, string> issuesCommon = new ConcurrentDictionary<Issue, string>();
+    private System.Security.Cryptography.RNGCryptoServiceProvider rand = new System.Security.Cryptography.RNGCryptoServiceProvider();
+    private HashSet<Suit> chosenSuits = new HashSet<Suit>() { Suit.Tampering };
+
+    [Inject]
+    private IFileReaderService FileReaderService { get; set; }
+
+    private ElementReference WhiteBoard;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using System.Security.Cryptography.SHA256 sha = System.Security.Cryptography.SHA256.Create();
+        byte[] buf = new byte[20];
+        rand.GetBytes(buf);
+        string userid = sha.ComputeHash(buf).ToHexString();
+        actualUserid = await JSRuntime.InvokeAsync<string>("blazorExtensions.WriteCookie", "UserID", userid, 1);
+
+        rand.GetBytes(buf);
+        var tmp = sha.ComputeHash(buf);
+        sessionID = tmp.ToHexString();
+        player.SessionIdHash = sha.ComputeHash(tmp).ToHexString();
+
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/control"))
+        .Build();
+        hubConnection.KeepAliveInterval = TimeSpan.FromSeconds(5);
+
+        RegisterEventCallbacks(hubConnection);
+
+        await hubConnection.StartAsync();
+    }
+
+    void RegisterEventCallbacks(HubConnection hubConnection)
+    {
+
+        hubConnection.On<Player, string>("CreatedSessionPrivate", CreatedSessionPrivate);
+
+        hubConnection.On<string>("JoinedSession", JoinedSession);
+
+        hubConnection.On<bool, bool>("SetOwnership", SetOwnership);
+
+        hubConnection.On<Player, List<string>, List<string>>("JoinedSessionPrivate", JoinedSessionPrivate);
+
+        hubConnection.On<string>("Spectating", Spectating);
+
+        hubConnection.On<Player, SessionPublicData>("SpectatingPrivate", SpectatingPrivate);
+
+        hubConnection.On<Player>("Recovered", Recovered);
+
+        hubConnection.On("YourTurn", YourTurn);
+
+        hubConnection.On<int>("CurrentPlayer", CurrentPlayer);
+
+        hubConnection.On<Player, Card>("RaisedCardPrivate", RaisedCardPrivate);
+
+        hubConnection.On<string, Card>("RaisedCard", RaisedCard);
+
+        hubConnection.On<string, Card>("CurrentHighest", CurrentHighest);
+
+        hubConnection.On<Issue>("DecideIfLegit", DecideIfLegit);
+
+        hubConnection.On<Player, int>("AwardedThreat", AwardedThreat);
+
+        hubConnection.On<string>("GameEnded", GameEnded);
+
+        hubConnection.On<string>("Exported", Exported);
+
+        hubConnection.On<Hand>("StartedSessionPrivate", StartedSessionPrivate);
+
+        hubConnection.On<string, Card>("Winner", Winner);
+
+        hubConnection.On("WinnerPrivate", WinnerPrivate);
+
+        hubConnection.On("EndRiff", EndRiff);
+
+        hubConnection.On<string, Suit, Suit[]>("ChangedSuit", ChangedSuit);
+
+        hubConnection.On<Issue>("IdentifiedThreat", IdentifiedThreat);
+    }
+
+    void CreatedSessionPrivate(Player player, string sessionId)
+    {
+        Console.WriteLine($"session created: {sessionId}");
+        this.player.UserId = player.UserId;
+        this.player.SessionIdHash = sessionId;
+        if (ownerPlaying)
+        {
+            players.Add(DecryptString(this.player.NameEncrypted));
+        }
+        owner = true;
+        insession = true;
+        StateHasChanged();
+    }
+
+    void JoinedSession(string player)
+    {
+        player = DecryptString(player);
+        Console.WriteLine($"session joined: {player}");
+        players.Add(player);
+        StateHasChanged();
+    }
+
+    void SetOwnership(bool value, bool ownerP)
+    {
+        owner = value;
+        ownerPlaying = ownerP;
+        StateHasChanged();
+    }
+
+    void JoinedSessionPrivate(Player player, List<string> players, List<string> spectators)
+    {
+        Console.WriteLine($"session joined succesfully.");
+        insession = true;
+        this.players = players.Select(p => DecryptString(p)).ToList();
+        this.spectators = spectators.Select(p => DecryptString(p)).ToList();
+        this.player.UserId = player.UserId;
+        StateHasChanged();
+    }
+
+    void Spectating(string player)
+    {
+        player = DecryptString(player);
+        Console.WriteLine($"session joined by spectator: {player}");
+        spectators.Add(player);
+        StateHasChanged();
+    }
+
+    void SpectatingPrivate(Player player, SessionPublicData publicData)
+    {
+        Console.WriteLine($"session joined succesfully as spectator.");
+        started = true;
+        insession = true;
+        spectating = true;
+        this.players = publicData.Players.Select(p => DecryptString(p)).ToList();
+        this.spectators = publicData.Spectators.Select(p => DecryptString(p)).ToList();
+        this.riffing = publicData.Riffing;
+        this.player.UserId = player.UserId;
+        this.playedCards = publicData.CurrentlyPlayedCards.ToList();
+        foreach (var iss in publicData.Issues)
+        {
+            issuesCommon.TryAdd(iss.Key, DecryptString(iss.Key.EncryptedThreat));
+        }
+        StateHasChanged();
+        TryRecover();
+    }
+
+    void Recovered(Player player)
+    {
+        Console.WriteLine($"recovery in progress");
+        this.player = player;
+        spectating = false;
+        StateHasChanged();
+    }
+
+    void YourTurn()
+    {
+        Console.WriteLine($"Your turn, raise a card");
+        myTurn = true;
+        if (player.First && player.Hand.Contains(new Card(Suit.Tampering, Value._3)))
+        {
+            selectedCard = new Card(Suit.Tampering, Value._3);
+            RaiseCard();
+        }
+        StateHasChanged();
+    }
+
+    void CurrentPlayer(int i)
+    {
+        Console.WriteLine($"Current player index: {i}");
+        currentPlayerIndex = i;
+        StateHasChanged();
+    }
+
+    void RaisedCardPrivate(Player p, Card c)
+    {
+        player.Hand.Remove(c);
+        myTurn = false;
+        comment = "";
+        StateHasChanged();
+    }
+
+    void RaisedCard(string p, Card c)
+    {
+        handOffset = 0;
+        p = DecryptString(p);
+        Console.WriteLine($"{p} raised {c}");
+        playedCards.Insert(0, c);
+        currentlyRaisedCard = c;
+        riffing = true;
+        StateHasChanged();
+
+    }
+
+    void CurrentHighest(string p, Card c)
+    {
+        p = DecryptString(p);
+        Console.WriteLine($"{p} holds highest: {c}");
+        currentHighest = c;
+        StateHasChanged();
+    }
+
+    void DecideIfLegit(Issue i)
+    {
+        if (owner)
+        {
+            var threat = DecryptString(i.EncryptedThreat);
+            Console.WriteLine($"{i.Player} identified {threat}, decide on approval");
+            issues.TryAdd(i, threat);
+        }
+        StateHasChanged();
+    }
+
+    void AwardedThreat(Player player, int coins)
+    {
+        Console.WriteLine($"{player} got coins: {coins}");
+        if (this.player == player)
+            this.player.Coins += coins;
+        StateHasChanged();
+    }
+
+    void GameEnded(string player)
+    {
+        player = DecryptString(player);
+        Console.WriteLine($"game ended, winner {player}");
+        winner = player;
+        gameEnded = true;
+        StateHasChanged();
+    }
+
+    void Exported(string json)
+    {
+        Console.WriteLine($"{json}");
+        var moves = JsonSerializer.Deserialize<Move[]>
+                                    (json);
+        foreach (var m in moves)
+        {
+            if (m.MoveType == MoveType.Raise || m.MoveType == MoveType.Riff || m.MoveType == MoveType.Award)
+            {
+                m.Player = DecryptString(m.Player);
+                m.Comment = DecryptString(m.Comment);
+            }
+        }
+        var _ = JSRuntime.InvokeAsync<object>
+        ("FileSaveAs", "session.json", JsonSerializer.Serialize(moves)).Result;
+    }
+
+    void StartedSessionPrivate(Hand hand)
+    {
+        Console.WriteLine($"session started, got my cards");
+        started = true;
+        this.player.Hand = hand;
+        this.player.Hand.SortBySuit(currentSuit);
+        StateHasChanged();
+    }
+
+    void Winner(string p, Card c)
+    {
+        p = DecryptString(p);
+        Console.WriteLine($"Round won by {p} with card {c}");
+        playedCards.Clear();
+        StateHasChanged();
+    }
+
+    void WinnerPrivate()
+    {
+        changingSuit = true;
+        StateHasChanged();
+    }
+
+    void EndRiff()
+    {
+        riffing = false;
+        myTurn = false;
+        StateHasChanged();
+    }
+
+    void IdentifiedThreat(Issue i)
+
+    {
+        var threat = DecryptString(i.EncryptedThreat);
+        Console.WriteLine($"{i.Player} identified threat: {threat}");
+        if (!string.IsNullOrEmpty(threat))
+            issuesCommon.TryAdd(i, threat);
+        StateHasChanged();
+    }
+
+    void ChangedSuit(string p, Suit s, Suit[] chosen)
+    {
+        handOffset = 0;
+        currentSuit = s;
+        changingSuit = false;
+        player.Hand.SortBySuit(s);
+        foreach (var c in chosen)
+        {
+            chosenSuits.Add(c);
+        }
+        StateHasChanged();
+    }
+
+    void CreateSession()
+    {
+        if (string.IsNullOrEmpty(name)) return;
+        createPressed = DateTime.Now;
+        player.NameEncrypted = EncryptString(name);
+        hubConnection.SendAsync("CreateSession", player, ownerPlaying);
+    }
+
+    void StartSession()
+    {
+        hubConnection.SendAsync("StartSession", player);
+    }
+
+    void JoinSession()
+    {
+        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(sessionID)) return;
+        ownerPlaying = true;
+        player.NameEncrypted = EncryptString(name);
+        using System.Security.Cryptography.SHA256 sha = System.Security.Cryptography.SHA256.Create();
+        player.SessionIdHash = sha.ComputeHash(sessionID.ConvertHexStringToByteArray()).ToHexString();
+        hubConnection.SendAsync("JoinSession", player);
+    }
+
+    string EncryptString(string toEncrypt)
+    {
+        using System.Security.Cryptography.Aes crypto = System.Security.Cryptography.Aes.Create();
+        crypto.Mode = System.Security.Cryptography.CipherMode.CBC;
+        crypto.Key = sessionID.ConvertHexStringToByteArray();
+        crypto.GenerateIV();
+        crypto.Padding = System.Security.Cryptography.PaddingMode.PKCS7;
+
+        using var resultStream = new MemoryStream();
+        using var cryptoStream = new System.Security.Cryptography.CryptoStream(resultStream, crypto.CreateEncryptor(), System.Security.Cryptography.CryptoStreamMode.Write);
+        cryptoStream.Write(System.Text.UnicodeEncoding.UTF8.GetBytes(toEncrypt));
+        cryptoStream.Close();
+
+        return crypto.IV.ToHexString() + ":" + resultStream.ToArray().ToHexString();
+    }
+
+    string DecryptString(string toDecrypt)
+    {
+        using System.Security.Cryptography.Aes crypto = System.Security.Cryptography.Aes.Create();
+        crypto.Mode = System.Security.Cryptography.CipherMode.CBC;
+        crypto.Key = sessionID.ConvertHexStringToByteArray();
+        var IV = toDecrypt.Substring(0, toDecrypt.IndexOf(":"));
+        var enc = toDecrypt.Substring(toDecrypt.IndexOf(":") + 1);
+        crypto.IV = toDecrypt.Substring(0, toDecrypt.IndexOf(":")).ConvertHexStringToByteArray();
+        crypto.Padding = System.Security.Cryptography.PaddingMode.PKCS7;
+        using var resultStream = new MemoryStream();
+        using var cryptoStream = new System.Security.Cryptography.CryptoStream(resultStream, crypto.CreateDecryptor(), System.Security.Cryptography.CryptoStreamMode.Write);
+
+        cryptoStream.Write(enc.ConvertHexStringToByteArray());
+        cryptoStream.Close();
+
+        return System.Text.UnicodeEncoding.UTF8.GetString(resultStream.ToArray());
+    }
+
+    void RaiseCard()
+    {
+        comment ??= "";
+        if (selectedCard is null) return;
+        hubConnection.SendAsync("RaiseCard", player, selectedCard, EncryptString(comment));
+        handOffset = 0;
+        selectedCard = null;
+    }
+
+    void IdentifyThreat()
+    {
+        if (comment == "") return;
+        hubConnection.SendAsync("IdentifyThreat", player, EncryptString(comment));
+        comment = "";
+        StateHasChanged();
+    }
+
+    void AwardThreat(Issue i)
+    {
+        hubConnection.SendAsync("AwardThreat", player, i, true);
+        issues.TryRemove(i, out _);
+        StateHasChanged();
+    }
+
+    void AwardThreatSimplified(int index)
+    {
+        string threat = EncryptString(comment);
+        hubConnection.SendAsync("AwardThreatSimplified", player, index, threat);
+        comment = "";
+        StateHasChanged();
+    }
+
+    void DismissThreat(Issue i)
+    {
+        Console.WriteLine($"dismissing");
+        issuesCommon.TryRemove(i, out _);
+        StateHasChanged();
+    }
+
+    void DismissThreatAdmin(Issue i)
+    {
+        Console.WriteLine($"dismissing (admin)");
+        issues.TryRemove(i, out _);
+        StateHasChanged();
+    }
+
+    void AdvanceRound()
+    {
+        Console.WriteLine("Trying to advance round.");
+        hubConnection.SendAsync("AdvanceRound", player);
+    }
+
+    void FinishAbruptly()
+    {
+        if (!started) return;
+        Console.WriteLine("Trying to finish game.");
+        hubConnection.SendAsync("FinishAbruptly", player);
+    }
+
+    void ChangeSuit()
+    {
+        Console.WriteLine("Trying to change suit.");
+        hubConnection.SendAsync("ChangeSuit", player, currentSuit);
+    }
+
+    void ForceSuit()
+    {
+        Console.WriteLine("Trying to force suit change.");
+        hubConnection.SendAsync("ForceSuit", player, currentSuit);
+        forcingSuit = false;
+    }
+
+    void TryRecover()
+    {
+        Console.WriteLine("Trying to recover.");
+        hubConnection.SendAsync("TryRecover", player, actualUserid);
+    }
+
+    void Export()
+    {
+        hubConnection.SendAsync("Export", player);
+    }
+
+    void OpenWhiteboard()
+    {
+        whiteBoardDisplay = "block";
+        StateHasChanged();
+    }
+
+    async Task DownloadWhiteboard()
+    {
+        if (whiteboard is null)
+        {
+            var content = JsonContent.Create(player.SessionIdHash, typeof(string));
+            var res = await Http.PostAsync("api/whiteboardDownload", content);
+            var imagestring = res.Content.ReadAsStringAsync().Result;
+            whiteboard = String.Format("data:image;base64,{0}", DecryptString(imagestring));
+            StateHasChanged();
+        }
+    }
+
+    async Task UploadWhiteboard()
+    {
+        foreach (var file in await FileReaderService.CreateReference(_input).EnumerateFilesAsync())
+        {
+            if (file != null)
+            {
+                var c = await file.OpenReadBase64Async();
+                var b = await c.ReadAsync(0, 1024 * 1024 * 5, new System.Threading.CancellationToken());
+                var content = EncryptString(b);
+                await Http.PostAsync("api/whiteboardUpload", JsonContent.Create($"{player.SessionIdHash}/{content}", typeof(string)));
+                await DownloadWhiteboard();
+            }
+        }
+    }
+
+    async Task CopySessionId()
+    {
+        Console.WriteLine("copying");
+        await JSRuntime.InvokeVoidAsync("clipboardCopy", sessionID);
+    }
+
+    async Task TryRefresh()
+    {
+        await hubConnection.StopAsync();
+        await hubConnection.DisposeAsync();
+
+        var hub = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/control"))
+        .Build();
+        hub.KeepAliveInterval = TimeSpan.FromSeconds(5);
+
+        RegisterEventCallbacks(hub);
+
+        await hub.StartAsync();
+        hubConnection = hub;
+        Console.WriteLine("restarted");
+        issues.Clear();
+        issuesCommon.Clear();
+        JoinSession();
+    }
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="51px" height="35px" viewBox="0 0 51 35" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>logo</title>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+        <g id="home" transform="translate(-15.000000, -12.000000)" stroke="#FFFFFF" stroke-width="2.02702703">
+            <g id="Group-11" transform="translate(17.000000, 14.000000)">
+                <polyline id="Stroke-1" points="13.4954479 31.0810811 12.1621622 0 35.1351351 0 32.9527255 31.0810811"></polyline>
+                <polyline id="Stroke-3" points="36.8109151 10.1351351 44.5945946 13.2670536 36.4864865 31.7567568"></polyline>
+                <polyline id="Stroke-5" points="44.5256413 19.5945946 47.2972973 21.3252537 41.2162162 31.0810811"></polyline>
+                <polyline id="Stroke-7" points="9.81070652 10.1351351 2.02702703 13.2670536 10.1351351 31.7567568"></polyline>
+                <polyline id="Stroke-9" points="2.77165599 19.5945946 0 21.3252537 6.08108108 31.0810811"></polyline>
+            </g>
+        </g>
+    </g>
+</svg>
