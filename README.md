@@ -1,8 +1,10 @@
 # The Remote Elevation of Privilege card game
 
+Announcement: https://blog.logmeininc.com/logmein-releases-open-source-remote-elevation-of-privilege-eop/
+
 Backend: .NET Core
 
-Frontend: .NET Core - Blazor WASM PWA
+Frontend: .NET Core - Blazor WASM PWA - [Card/deck assets](https://www.thegamecrafter.com/games/elevation-of-privilege) by Microsoft under [CC3.0](https://creativecommons.org/licenses/by/3.0/)
 
 "Supported" browser: Chrome
 
