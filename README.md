@@ -11,7 +11,7 @@ Frontend: .NET Core - Blazor WASM PWA - [Card/deck assets](https://www.thegamecr
 # How to setup and play
 
 ## Prerequisites
-- latest .NET Core SDK (3.2+)
+- [latest .NET Core 3.1 LTS SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1)
 - internet access (to download NuGet packages)
 
 ## Starting the server
