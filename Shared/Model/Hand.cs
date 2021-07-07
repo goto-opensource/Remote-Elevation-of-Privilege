@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace rEoP.Shared.Model
@@ -26,6 +27,11 @@ namespace rEoP.Shared.Model
         public Card this[int key]
         {
             get => this.Cards[key];
+        }
+
+        public bool HasOnlyAceForSuit(Suit suit)
+        {
+            return Cards.Where(c => c.Suit == suit).All(c => c.Value == Value._A);
         }
 
         public void Remove(Card card)

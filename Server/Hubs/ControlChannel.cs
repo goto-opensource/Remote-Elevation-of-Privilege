@@ -74,7 +74,7 @@ namespace rEoP.Server.Hubs
                         player = players[index];
                         var currentPlayerHand = player.Hand;
                         //if card is matching suit, or player has no card from current suit or trump
-                        if (currentPlayerHand.Contains(card) && (currentPlayerHand.Cards.All(c => c.Suit != session.CurrentSuit) || card.Suit == session.CurrentSuit || card.Suit == Suit.ElevationOfPrivilege))
+                        if (currentPlayerHand.Contains(card) && (currentPlayerHand.Cards.All(c => c.Suit != session.CurrentSuit) || card.Suit == session.CurrentSuit || card.Suit == Suit.ElevationOfPrivilege || currentPlayerHand.HasOnlyAceForSuit(session.CurrentSuit)))
                         {
                             if (card.Value == Value._A && threat == "")
                             {

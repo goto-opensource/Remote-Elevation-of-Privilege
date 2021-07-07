@@ -153,7 +153,7 @@
                 var filename = "deck/" + card.Suit.ToString().ToLower() + card.Value.ToString() + ".jpg";
                 var left = $"{6 + (i * 18)}%";
                 var border = selectedCard?.Equals(card) ?? false ? 3 : 1;
-                if (currentSuit != card.Suit && card.Suit != Suit.ElevationOfPrivilege && player.Hand.Cards.Any(card => card.Suit == currentSuit))
+                if (currentSuit != card.Suit && card.Suit != Suit.ElevationOfPrivilege && player.Hand.Cards.Any(card => card.Suit == currentSuit) && !player.Hand.HasOnlyAceForSuit(currentSuit))
                 {
                     <div class="c-layer c-layer--image" style="filter: grayscale(100%); border-style: solid; border-radius: 15px; border-width: @(border) px; border-color: black; width: 16%; height: 80%; top: 5%; left: @(left); background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
                 }
