@@ -14,6 +14,71 @@
 </head>
 <body>
     <script>
+        window.encryptUsingSubtleCrypto = async function (key, inputText) {
+            // 'key' and 'inputText' are each passed as Uint8Array objects, the JS
+            // equivalent of .NET's byte[]. SubtleCrypto uses ArrayBuffer objects
+            // for the key and the input and output buffers.
+            //
+            // To convert Uint8Array -> ArrayBuffer, use the Uint8Array.buffer property.
+            // To convert ArrayBuffer -> Uint8Array, call the Uint8Array constructor.
+            //
+            // Most of SubtleCrypto's functions - including importKey and sign - are
+            // Promise-based. We await them to unwrap the Promise, similar to how we'd
+            // await a Task-based function in .NET.
+            //
+            // https://developer.mozilla.org/docs/Web/API/SubtleCrypto/importKey
+
+            var ckey = await crypto.subtle.importKey(
+                "raw" /* format */,
+                key.buffer /* keyData */,
+                "AES-CBC" /* algorithm (HmacImportParams) */,
+                false /* extractable */,
+                ["encrypt", "decrypt"] /* keyUsages */);
+            var iv = window.crypto.getRandomValues(new Uint8Array(16));
+            var ret = await window.crypto.subtle.encrypt(
+                {
+                    name: "AES-CBC",
+                    iv
+                },
+                ckey,
+                inputText
+            );
+            return new Uint8Array([ ...iv, ...new Uint8Array(ret) ]);
+        };
+
+        window.decryptUsingSubtleCrypto = async function (key, iv, inputText) {
+            // 'key' and 'inputText' are each passed as Uint8Array objects, the JS
+            // equivalent of .NET's byte[]. SubtleCrypto uses ArrayBuffer objects
+            // for the key and the input and output buffers.
+            //
+            // To convert Uint8Array -> ArrayBuffer, use the Uint8Array.buffer property.
+            // To convert ArrayBuffer -> Uint8Array, call the Uint8Array constructor.
+            //
+            // Most of SubtleCrypto's functions - including importKey and sign - are
+            // Promise-based. We await them to unwrap the Promise, similar to how we'd
+            // await a Task-based function in .NET.
+            //
+            // https://developer.mozilla.org/docs/Web/API/SubtleCrypto/importKey
+
+            var ckey = await crypto.subtle.importKey(
+                "raw" /* format */,
+                key.buffer /* keyData */,
+                "AES-CBC" /* algorithm (HmacImportParams) */,
+                false /* extractable */,
+                ["encrypt", "decrypt"] /* keyUsages */);
+            var ret = await window.crypto.subtle.decrypt(
+                {
+                    name: "AES-CBC",
+                    iv
+                },
+                ckey,
+                inputText
+            );
+            return new Uint8Array(ret);
+        };
+    </script>
+
+    <script>
 
         function clipboardCopy(text) {
             navigator.clipboard.writeText(text).then(function () {
@@ -23,7 +88,7 @@
                     alert(error);
                 });
         }
-        
+
         function FileSaveAs(filename, fileContent) {
             var link = document.createElement('a');
             link.download = filename;
@@ -81,7 +146,7 @@
             }
         }
     </script>
-    <app>Loading...</app>
+    <div id="app">Loading...</div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.

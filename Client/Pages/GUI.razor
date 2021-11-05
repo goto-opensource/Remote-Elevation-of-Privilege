@@ -1028,7 +1028,7 @@
     private Suit currentSuit = Suit.Tampering;
     private ConcurrentDictionary<Issue, string> issues = new ConcurrentDictionary<Issue, string>();
     private ConcurrentDictionary<Issue, string> issuesCommon = new ConcurrentDictionary<Issue, string>();
-    private System.Security.Cryptography.RNGCryptoServiceProvider rand = new System.Security.Cryptography.RNGCryptoServiceProvider();
+    private System.Security.Cryptography.RandomNumberGenerator rand = System.Security.Cryptography.RandomNumberGenerator.Create();
     private HashSet<Suit> chosenSuits = new HashSet<Suit>() { Suit.Tampering };
 
     [Inject]
@@ -1107,23 +1107,23 @@
         hubConnection.On<Issue>("IdentifiedThreat", IdentifiedThreat);
     }
 
-    void CreatedSessionPrivate(Player player, string sessionId)
+    async void CreatedSessionPrivate(Player player, string sessionId)
     {
         Console.WriteLine($"session created: {sessionId}");
         this.player.UserId = player.UserId;
         this.player.SessionIdHash = sessionId;
         if (ownerPlaying)
         {
-            players.Add(DecryptString(this.player.NameEncrypted));
+            players.Add(await DecryptString(this.player.NameEncrypted));
         }
         owner = true;
         insession = true;
         StateHasChanged();
     }
 
-    void JoinedSession(string player)
+    async void JoinedSession(string player)
     {
-        player = DecryptString(player);
+        player = await DecryptString(player);
         Console.WriteLine($"session joined: {player}");
         players.Add(player);
         StateHasChanged();
@@ -1136,38 +1136,52 @@
         StateHasChanged();
     }
 
-    void JoinedSessionPrivate(Player player, List<string> players, List<string> spectators)
+    async void JoinedSessionPrivate(Player player, List<string> players, List<string> spectators)
     {
         Console.WriteLine($"session joined succesfully.");
         insession = true;
-        this.players = players.Select(p => DecryptString(p)).ToList();
-        this.spectators = spectators.Select(p => DecryptString(p)).ToList();
+        this.players = new List<string>();
+        foreach (var p in players) {
+            this.players.Add(await DecryptString(p));
+        }
+        this.spectators = new List<string>();
+        foreach (var s in spectators) {
+            this.spectators.Add(await DecryptString(s));
+        }
         this.player.UserId = player.UserId;
         StateHasChanged();
     }
 
-    void Spectating(string player)
+    async void Spectating(string player)
     {
-        player = DecryptString(player);
+        player = await DecryptString(player);
         Console.WriteLine($"session joined by spectator: {player}");
         spectators.Add(player);
         StateHasChanged();
     }
 
-    void SpectatingPrivate(Player player, SessionPublicData publicData)
+    async void SpectatingPrivate(Player player, SessionPublicData publicData)
     {
         Console.WriteLine($"session joined succesfully as spectator.");
         started = true;
         insession = true;
         spectating = true;
-        this.players = publicData.Players.Select(p => DecryptString(p)).ToList();
-        this.spectators = publicData.Spectators.Select(p => DecryptString(p)).ToList();
+        this.players = new List<string>();
+        foreach (var p in publicData.Players)
+        {
+            this.players.Add(await DecryptString(p));
+        }
+        this.spectators = new List<string>();
+        foreach (var s in publicData.Spectators)
+        {
+            this.spectators.Add(await DecryptString(s));
+        }
         this.riffing = publicData.Riffing;
         this.player.UserId = player.UserId;
         this.playedCards = publicData.CurrentlyPlayedCards.ToList();
         foreach (var iss in publicData.Issues)
         {
-            issuesCommon.TryAdd(iss.Key, DecryptString(iss.Key.EncryptedThreat));
+            issuesCommon.TryAdd(iss.Key, await DecryptString(iss.Key.EncryptedThreat));
         }
         StateHasChanged();
         TryRecover();
@@ -1208,10 +1222,10 @@
         StateHasChanged();
     }
 
-    void RaisedCard(string p, Card c)
+    async void RaisedCard(string p, Card c)
     {
         handOffset = 0;
-        p = DecryptString(p);
+        p = await DecryptString(p);
         Console.WriteLine($"{p} raised {c}");
         playedCards.Insert(0, c);
         currentlyRaisedCard = c;
@@ -1220,19 +1234,19 @@
 
     }
 
-    void CurrentHighest(string p, Card c)
+    async void CurrentHighest(string p, Card c)
     {
-        p = DecryptString(p);
+        p = await DecryptString(p);
         Console.WriteLine($"{p} holds highest: {c}");
         currentHighest = c;
         StateHasChanged();
     }
 
-    void DecideIfLegit(Issue i)
+    async void DecideIfLegit(Issue i)
     {
         if (owner)
         {
-            var threat = DecryptString(i.EncryptedThreat);
+            var threat = await DecryptString(i.EncryptedThreat);
             Console.WriteLine($"{i.Player} identified {threat}, decide on approval");
             issues.TryAdd(i, threat);
         }
@@ -1247,16 +1261,16 @@
         StateHasChanged();
     }
 
-    void GameEnded(string player)
+    async void GameEnded(string player)
     {
-        player = DecryptString(player);
+        player = await DecryptString(player);
         Console.WriteLine($"game ended, winner {player}");
         winner = player;
         gameEnded = true;
         StateHasChanged();
     }
 
-    void Exported(string json)
+    async void Exported(string json)
     {
         Console.WriteLine($"{json}");
         var moves = JsonSerializer.Deserialize<Move[]>
@@ -1265,8 +1279,8 @@
         {
             if (m.MoveType == MoveType.Raise || m.MoveType == MoveType.Riff || m.MoveType == MoveType.Award)
             {
-                m.Player = DecryptString(m.Player);
-                m.Comment = DecryptString(m.Comment);
+                m.Player = await DecryptString(m.Player);
+                m.Comment = await DecryptString(m.Comment);
             }
         }
         var _ = JSRuntime.InvokeAsync<object>
@@ -1282,9 +1296,9 @@
         StateHasChanged();
     }
 
-    void Winner(string p, Card c)
+    async void Winner(string p, Card c)
     {
-        p = DecryptString(p);
+        p = await DecryptString(p);
         Console.WriteLine($"Round won by {p} with card {c}");
         playedCards.Clear();
         StateHasChanged();
@@ -1303,10 +1317,9 @@
         StateHasChanged();
     }
 
-    void IdentifiedThreat(Issue i)
-
+    async void IdentifiedThreat(Issue i)
     {
-        var threat = DecryptString(i.EncryptedThreat);
+        var threat = await DecryptString(i.EncryptedThreat);
         Console.WriteLine($"{i.Player} identified threat: {threat}");
         if (!string.IsNullOrEmpty(threat))
             issuesCommon.TryAdd(i, threat);
@@ -1326,91 +1339,79 @@
         StateHasChanged();
     }
 
-    void CreateSession()
+    async void CreateSession()
     {
         if (string.IsNullOrEmpty(name)) return;
         createPressed = DateTime.Now;
-        player.NameEncrypted = EncryptString(name);
-        hubConnection.SendAsync("CreateSession", player, ownerPlaying);
+        player.NameEncrypted = await EncryptString(name);
+        await hubConnection.SendAsync("CreateSession", player, ownerPlaying);
     }
 
-    void StartSession()
+    async void StartSession()
     {
-        hubConnection.SendAsync("StartSession", player);
+        await hubConnection.SendAsync("StartSession", player);
     }
 
-    void JoinSession()
+    async void JoinSession()
     {
         if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(sessionID)) return;
         ownerPlaying = true;
-        player.NameEncrypted = EncryptString(name);
+        player.NameEncrypted = await EncryptString(name);
         using System.Security.Cryptography.SHA256 sha = System.Security.Cryptography.SHA256.Create();
         player.SessionIdHash = sha.ComputeHash(sessionID.ConvertHexStringToByteArray()).ToHexString();
-        hubConnection.SendAsync("JoinSession", player);
+        await hubConnection.SendAsync("JoinSession", player);
     }
 
-    string EncryptString(string toEncrypt)
+    async Task<string> EncryptString(string toEncrypt)
     {
-        using System.Security.Cryptography.Aes crypto = System.Security.Cryptography.Aes.Create();
-        crypto.Mode = System.Security.Cryptography.CipherMode.CBC;
-        crypto.Key = sessionID.ConvertHexStringToByteArray();
-        crypto.GenerateIV();
-        crypto.Padding = System.Security.Cryptography.PaddingMode.PKCS7;
-
-        using var resultStream = new MemoryStream();
-        using var cryptoStream = new System.Security.Cryptography.CryptoStream(resultStream, crypto.CreateEncryptor(), System.Security.Cryptography.CryptoStreamMode.Write);
-        cryptoStream.Write(System.Text.UnicodeEncoding.UTF8.GetBytes(toEncrypt));
-        cryptoStream.Close();
-
-        return crypto.IV.ToHexString() + ":" + resultStream.ToArray().ToHexString();
+        var ret = await JSRuntime.InvokeAsync<byte[]>(
+            "encryptUsingSubtleCrypto", 
+            sessionID.ConvertHexStringToByteArray(),
+             System.Text.UnicodeEncoding.UTF8.GetBytes(toEncrypt)
+        );
+        return $"{ret[0..16].ToHexString()}:{ret[16..].ToHexString()}";
     }
 
-    string DecryptString(string toDecrypt)
+    async Task<string> DecryptString(string toDecrypt)
     {
-        using System.Security.Cryptography.Aes crypto = System.Security.Cryptography.Aes.Create();
-        crypto.Mode = System.Security.Cryptography.CipherMode.CBC;
-        crypto.Key = sessionID.ConvertHexStringToByteArray();
-        var IV = toDecrypt.Substring(0, toDecrypt.IndexOf(":"));
-        var enc = toDecrypt.Substring(toDecrypt.IndexOf(":") + 1);
-        crypto.IV = toDecrypt.Substring(0, toDecrypt.IndexOf(":")).ConvertHexStringToByteArray();
-        crypto.Padding = System.Security.Cryptography.PaddingMode.PKCS7;
-        using var resultStream = new MemoryStream();
-        using var cryptoStream = new System.Security.Cryptography.CryptoStream(resultStream, crypto.CreateDecryptor(), System.Security.Cryptography.CryptoStreamMode.Write);
-
-        cryptoStream.Write(enc.ConvertHexStringToByteArray());
-        cryptoStream.Close();
-
-        return System.Text.UnicodeEncoding.UTF8.GetString(resultStream.ToArray());
+        return System.Text.UnicodeEncoding.UTF8.GetString(
+            await JSRuntime.InvokeAsync<byte[]>(
+                "decryptUsingSubtleCrypto",
+                sessionID.ConvertHexStringToByteArray(),
+                toDecrypt.Substring(0, toDecrypt.IndexOf(":")).ConvertHexStringToByteArray(),
+                toDecrypt.Substring(toDecrypt.IndexOf(":") + 1).ConvertHexStringToByteArray(/*UTF8-bytes*/)
+            )
+        );
     }
 
-    void RaiseCard()
+    async void RaiseCard()
     {
         comment ??= "";
         if (selectedCard is null) return;
-        hubConnection.SendAsync("RaiseCard", player, selectedCard, EncryptString(comment));
+        await hubConnection.SendAsync("RaiseCard", player, selectedCard, await EncryptString(comment));
         handOffset = 0;
         selectedCard = null;
     }
 
-    void IdentifyThreat()
+    async void IdentifyThreat()
     {
         if (comment == "") return;
-        hubConnection.SendAsync("IdentifyThreat", player, EncryptString(comment));
+        await hubConnection.SendAsync("IdentifyThreat", player, await EncryptString(comment));
         comment = "";
         StateHasChanged();
     }
 
-    void AwardThreat(Issue i)
+    async void AwardThreat(Issue i)
     {
-        hubConnection.SendAsync("AwardThreat", player, i, true);
+        await hubConnection.SendAsync("AwardThreat", player, i, true);
         issues.TryRemove(i, out _);
         StateHasChanged();
     }
 
-    void AwardThreatSimplified(int index)
+    async void AwardThreatSimplified(int index)
     {
-        string threat = EncryptString(comment);
-        hubConnection.SendAsync("AwardThreatSimplified", player, index, threat);
+        string threat = await EncryptString(comment);
+        await hubConnection.SendAsync("AwardThreatSimplified", player, index, threat);
         comment = "";
         StateHasChanged();
     }
@@ -1429,44 +1430,44 @@
         StateHasChanged();
     }
 
-    void AdvanceRound()
+    async void AdvanceRound()
     {
         Console.WriteLine("Trying to advance round.");
-        hubConnection.SendAsync("AdvanceRound", player);
+        await hubConnection.SendAsync("AdvanceRound", player);
     }
 
-    void FinishAbruptly()
+    async void FinishAbruptly()
     {
         if (!started) return;
         Console.WriteLine("Trying to finish game.");
-        hubConnection.SendAsync("FinishAbruptly", player);
+        await hubConnection.SendAsync("FinishAbruptly", player);
     }
 
-    void ChangeSuit()
+    async void ChangeSuit()
     {
         Console.WriteLine("Trying to change suit.");
-        hubConnection.SendAsync("ChangeSuit", player, currentSuit);
+        await hubConnection.SendAsync("ChangeSuit", player, currentSuit);
     }
 
-    void ForceSuit()
+    async void ForceSuit()
     {
         Console.WriteLine("Trying to force suit change.");
-        hubConnection.SendAsync("ForceSuit", player, currentSuit);
+        await hubConnection.SendAsync("ForceSuit", player, currentSuit);
         forcingSuit = false;
     }
 
-    void TryRecover()
+    async void TryRecover()
     {
         Console.WriteLine("Trying to recover.");
-        hubConnection.SendAsync("TryRecover", player, actualUserid);
+        await hubConnection.SendAsync("TryRecover", player, actualUserid);
     }
 
-    void Export()
+    async void Export()
     {
-        hubConnection.SendAsync("Export", player);
+        await hubConnection.SendAsync("Export", player);
     }
 
-    void OpenWhiteboard()
+    async void OpenWhiteboard()
     {
         whiteBoardDisplay = "block";
         StateHasChanged();
@@ -1479,7 +1480,7 @@
             var content = JsonContent.Create(player.SessionIdHash, typeof(string));
             var res = await Http.PostAsync("api/whiteboardDownload", content);
             var imagestring = res.Content.ReadAsStringAsync().Result;
-            whiteboard = String.Format("data:image;base64,{0}", DecryptString(imagestring));
+            whiteboard = String.Format("data:image;base64,{0}", await DecryptString(imagestring));
             StateHasChanged();
         }
     }
@@ -1492,7 +1493,7 @@
             {
                 var c = await file.OpenReadBase64Async();
                 var b = await c.ReadAsync(0, 1024 * 1024 * 5, new System.Threading.CancellationToken());
-                var content = EncryptString(b);
+                var content = await EncryptString(b);
                 await Http.PostAsync("api/whiteboardUpload", JsonContent.Create($"{player.SessionIdHash}/{content}", typeof(string)));
                 await DownloadWhiteboard();
             }
