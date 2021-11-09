@@ -74,7 +74,7 @@ namespace rEoP.Server.Hubs
                         player = players[index];
                         var currentPlayerHand = player.Hand;
                         //if card is matching suit, or player has no card from current suit or trump
-                        if (currentPlayerHand.Contains(card) && (currentPlayerHand.Cards.All(c => c.Suit != session.CurrentSuit) || card.Suit == session.CurrentSuit || card.Suit == Suit.ElevationOfPrivilege || currentPlayerHand.HasOnlyAceForSuit(session.CurrentSuit)))
+                        if (currentPlayerHand.Contains(card) && (currentPlayerHand.Cards.All(c => c.Suit != session.CurrentSuit) || card.Suit == session.CurrentSuit || card.Suit == session.Deck.TrumpSuit || currentPlayerHand.HasOnlyAceForSuit(session.CurrentSuit)))
                         {
                             if (card.Value == Value._A && threat == "")
                             {
@@ -90,7 +90,7 @@ namespace rEoP.Server.Hubs
                             }
                             else
                             {
-                                var maxCard = session.CurrentlyPlayedCards.Where(c => c.Suit == session.CurrentSuit || c.Suit == Suit.ElevationOfPrivilege).Max();
+                                var maxCard = session.CurrentlyPlayedCards.Where(c => c.Suit == session.CurrentSuit || c.Suit == session.Deck.TrumpSuit).Max();
                                 if (maxCard != null && maxCard.Equals(card))
                                 {
                                     session.RoundWinner = (player, card);
@@ -218,9 +218,9 @@ namespace rEoP.Server.Hubs
             }
         }
 
-        public async Task CreateSession(Player owner, bool ownerPlaying)
+        public async Task CreateSession(Player owner, bool ownerPlaying, Deck.DeckType type)
         {
-            var sess = new Session(owner.SessionIdHash);
+            var sess = new Session(owner.SessionIdHash, type);
             if (_store.Sessions.TryAdd(sess.IDHash, sess))
             {
                 var players = _store.Sessions[sess.IDHash].Players;
@@ -234,7 +234,7 @@ namespace rEoP.Server.Hubs
                 sess.Owner = owner;
                 sess.OriginalOwner = owner;
                 await this.Groups.AddToGroupAsync(this.Context.ConnectionId, sess.IDHash);
-                await this.Clients.Caller.SendAsync("CreatedSessionPrivate", owner, sess.IDHash);
+                await this.Clients.Caller.SendAsync("CreatedSessionPrivate", owner, sess.IDHash, sess.Deck.Type);
             }
         }
 
@@ -285,7 +285,7 @@ namespace rEoP.Server.Hubs
                 }
                 players.Add(player);
                 await this.Groups.AddToGroupAsync(this.Context.ConnectionId, player.SessionIdHash);
-                await this.Clients.Caller.SendAsync("JoinedSessionPrivate", player, session.Players.Select(p => p.NameEncrypted), session.Spectators.Select(p => p.NameEncrypted));
+                await this.Clients.Caller.SendAsync("JoinedSessionPrivate", player, session.Players.Select(p => p.NameEncrypted), session.Spectators.Select(p => p.NameEncrypted), session.Deck.Type);
                 await this.Clients.GroupExcept(player.SessionIdHash, this.Context.ConnectionId).SendAsync("JoinedSession", player.NameEncrypted);
             }
         }
@@ -359,6 +359,14 @@ namespace rEoP.Server.Hubs
                             session.CurrentPlayer = player;
                             await this.Clients.Group(owner.SessionIdHash).SendAsync("CurrentPlayer", i % session.Players.Count);
                             await this.Clients.User(player.UserId).SendAsync("YourTurn");
+                        }
+                        else if (i == 0 && session.Deck.Type == Deck.DeckType.Cornucopia)
+                        {
+                            session.CurrentPlayer = player;
+                            await this.Clients.Group(owner.SessionIdHash).SendAsync("CurrentPlayer", i % session.Players.Count);
+                            await this.Clients.User(player.UserId).SendAsync("YourTurn");
+                            session.SuitChooser = player;
+                            await this.Clients.User(player.UserId).SendAsync("WinnerPrivate");
                         }
                     }
                 }

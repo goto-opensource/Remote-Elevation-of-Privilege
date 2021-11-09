@@ -11,7 +11,7 @@ namespace rEoP.Shared.Model
     public class Session
     {
         public int Round { get; set; } = 0;
-        public Deck Deck { get; } = new Deck();
+        public Deck Deck { get; }
         public List<Player> Players { get; } = new List<Player>(10);
         public List<Player> Spectators { get; } = new List<Player>(10);
         public ConcurrentQueue<Move> Moves { get; } = new ConcurrentQueue<Move>();
@@ -45,9 +45,10 @@ namespace rEoP.Shared.Model
         public int StillPlayingActively { get; set; }
         public bool OwnerPlaying { get; set; } = false;
 
-        public Session(string idHash)
+        public Session(string idHash, Deck.DeckType type)
         {
             this.IDHash = idHash;
+            this.Deck = new Deck(type);
             this.Deck.Shuffle();
         }
 
@@ -82,7 +83,8 @@ namespace rEoP.Shared.Model
                 this.CurrentSuit,
                 this.RoundWinner,
                 this.RaisedCard,
-                this.Issues
+                this.Issues,
+                this.Deck.Type
             );
         }
 

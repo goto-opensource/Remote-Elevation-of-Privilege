@@ -19,11 +19,11 @@ namespace rEoP.Shared.Model
         {
             if (this.Suit != other.Suit)
             {
-                if (this.Suit == Suit.ElevationOfPrivilege)
+                if (this.Suit == Suit.ElevationOfPrivilege || this.Suit == Suit.Cornucopia)
                 {
                     return 1;
                 }
-                if (other.Suit == Suit.ElevationOfPrivilege)
+                if (other.Suit == Suit.ElevationOfPrivilege || other.Suit == Suit.Cornucopia)
                 {
                     return -1;
                 }

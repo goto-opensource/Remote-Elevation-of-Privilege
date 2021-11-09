@@ -46,13 +46,13 @@ namespace rEoP.Shared.Model
 
         public void SortBySuit(Suit s)
         {
-            if (s == Suit.ElevationOfPrivilege)
+            if (s == Suit.ElevationOfPrivilege || s == Suit.Cornucopia)
             {
                 this.Cards = this.Cards.Where(c => c.Suit == s).Concat(this.Cards.Where(c => c.Suit != s)).ToList();
             }
             else
             {
-                this.Cards = this.Cards.Where(c => c.Suit == s).Concat(this.Cards.Where(c => c.Suit == Suit.ElevationOfPrivilege).Concat(this.Cards.Where(c => c.Suit != s && c.Suit != Suit.ElevationOfPrivilege))).ToList();
+                this.Cards = this.Cards.Where(c => c.Suit == s).Concat(this.Cards.Where(c => c.Suit == Suit.ElevationOfPrivilege || s == Suit.Cornucopia).Concat(this.Cards.Where(c => c.Suit != s && c.Suit != Suit.ElevationOfPrivilege && c.Suit != Suit.Cornucopia))).ToList();
             }
 
         }

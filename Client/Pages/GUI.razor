@@ -153,7 +153,7 @@
                 var filename = "deck/" + card.Suit.ToString().ToLower() + card.Value.ToString() + ".jpg";
                 var left = $"{6 + (i * 18)}%";
                 var border = selectedCard?.Equals(card) ?? false ? 3 : 1;
-                if (currentSuit != card.Suit && card.Suit != Suit.ElevationOfPrivilege && player.Hand.Cards.Any(card => card.Suit == currentSuit) && !player.Hand.HasOnlyAceForSuit(currentSuit))
+                if (currentSuit != card.Suit && card.Suit != trumpSuit && player.Hand.Cards.Any(card => card.Suit == currentSuit) && !player.Hand.HasOnlyAceForSuit(currentSuit))
                 {
                     <div class="c-layer c-layer--image" style="filter: grayscale(100%); border-style: solid; border-radius: 15px; border-width: @(border) px; border-color: black; width: 16%; height: 80%; top: 5%; left: @(left); background-image: url( @filename ); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
                 }
@@ -241,7 +241,7 @@
                 <div class="c-layer c-layer--text" style="width: 100%; height: 5%; top: 2%; left: 0px; justify-content: flex-start;">
                     <p class="c-layer__text" style="color: rgb(44, 39, 56); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: center; padding-bottom: 0px;">You won the round, choose a suit!</p>
                 </div>
-                @foreach (Suit suit in (Suit[])Enum.GetValues(typeof(Suit)))
+                @foreach (Suit suit in suits)
                 {
                     var filename = "deck/" + suit.ToString().ToLower() + "_A" + ".jpg";
                     var left = $"{1.5 + (i * 14)}%";
@@ -276,7 +276,7 @@
         var i = 0;
         <div @onclick="() => { forcingSuit = false; StateHasChanged(); }" id="forceSuitModal" style="display: block; position: absolute; z-index: 3; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); ">
             <div class="c-layer" style="background-color: #fefefe; height:60%; margin: 5% 5%; border: 1px solid #888; width: 90%; border-radius: 15px;">
-                @foreach (Suit suit in (Suit[])Enum.GetValues(typeof(Suit)))
+                @foreach (Suit suit in suits)
                 {
                     var filename = "deck/" + suit.ToString().ToLower() + "_A" + ".jpg";
                     var left = $"{1.5 + (i * 14)}%";
@@ -377,7 +377,7 @@
                     </div>
                 </div>
             </div>
-            <div class="c-layer c-layer--group" style="width: 20%; height: 4%; top: 40%; left: 10%;">
+            <div class="c-layer c-layer--group" style="width: 20%; height: 6%; top: 40%; left: 10%;">
                 <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px;">
                     <div class="c-layer c-layer--text" style="width: 100%; height: 50%; top: 0%; left: 0px; justify-content: flex-start;">
                         <p class="c-layer__text" style="color: rgb(117, 111, 134); font-family: Helvetica; font-size: 1.98vh; font-weight: 400; letter-spacing: 0px; text-align: left; padding-bottom: 0px;">
@@ -386,9 +386,17 @@
                     </div>
                 </div>
             </div>
+            <div class="c-layer c-layer--group" style="width: 20%; height: 2%; top: 46%; left: 10%;">
+                <select class="form-control c-layer" @bind="deckType">
+                    @foreach (var type in deckTypes)
+                    {
+                        <option value="@type">@type.ToString("g")</option>
+                    }
+                </select>
+            </div>
             <button type="button" @onclick="(() => { if (createPressed < DateTime.Now.AddSeconds(-10)) { CreateSession(); } })" class="c-layer c-layer--group" style="        width: 10%;
         height: 4%;
-        top: 46%;
+        top: 52%;
         left: 10%;
         background-color: rgb(8, 128, 174);
         border-radius: 6px;
@@ -823,7 +831,7 @@
                     <div onclick="toggle('@($"tooltip{playerIndex}")')" title="@p" class="c-layer c-layer--group" style="width: 8%; height: 100%; top: @(playerIndex == currentPlayerIndex ? "-20%" : "0%"); left: @(left)%;">
                         <div class="c-layer c-layer--group" style="width: 100%; height: 100%; top: 0px; left: 0px; border-radius: 15px; overflow: hidden;">
                             <div class="c-layer c-layer--shape-path" style="width: 100%; height: 100%; top: 0px; left: 0px; background: rgb(216, 216, 216); border-radius: 15px;"></div>
-                            <div class="c-layer c-layer--image" style="width: 100%; height: 100%; top: 0; left: 0px; background-image: url(&quot;deck/back.png&quot;); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
+                            <div class="c-layer c-layer--image" style="width: 100%; height: 100%; top: 0; left: 0px; background-image: @($"url(\"deck/{deckType.ToString("g").ToLower()}_back.png\")"); background-repeat: no-repeat; background-size: 100% 100%; background-position: center center;"></div>
                         </div>
                         <div class="c-layer" style="width: 90%; height: 10%; top: 100%; left: 5%; overflow: hidden; text-overflow: ellipsis;">@p</div>
                     </div>
@@ -1015,6 +1023,7 @@
     private Player player = new Player();
     private HubConnection hubConnection;
     private bool owner = false;
+    private Suit[] suits = null;
     private Card selectedCard;
     private Card currentlyRaisedCard;
     private Card currentHighest;
@@ -1025,11 +1034,19 @@
     private bool simplifiedMode = false;
     private string comment = "";
     private string actualUserid = "";
-    private Suit currentSuit = Suit.Tampering;
+    private Suit currentSuit;
+    private Suit trumpSuit;
     private ConcurrentDictionary<Issue, string> issues = new ConcurrentDictionary<Issue, string>();
     private ConcurrentDictionary<Issue, string> issuesCommon = new ConcurrentDictionary<Issue, string>();
     private System.Security.Cryptography.RandomNumberGenerator rand = System.Security.Cryptography.RandomNumberGenerator.Create();
     private HashSet<Suit> chosenSuits = new HashSet<Suit>() { Suit.Tampering };
+    private Deck.DeckType deckType;
+
+    private List<Deck.DeckType> deckTypes = new List<Deck.DeckType>()
+            {
+                Deck.DeckType.REOP,
+                Deck.DeckType.Cornucopia
+            };
 
     [Inject]
     private IFileReaderService FileReaderService { get; set; }
@@ -1062,13 +1079,13 @@
     void RegisterEventCallbacks(HubConnection hubConnection)
     {
 
-        hubConnection.On<Player, string>("CreatedSessionPrivate", CreatedSessionPrivate);
+        hubConnection.On<Player, string, Deck.DeckType>("CreatedSessionPrivate", CreatedSessionPrivate);
 
         hubConnection.On<string>("JoinedSession", JoinedSession);
 
         hubConnection.On<bool, bool>("SetOwnership", SetOwnership);
 
-        hubConnection.On<Player, List<string>, List<string>>("JoinedSessionPrivate", JoinedSessionPrivate);
+        hubConnection.On<Player, List<string>, List<string>, Deck.DeckType>("JoinedSessionPrivate", JoinedSessionPrivate);
 
         hubConnection.On<string>("Spectating", Spectating);
 
@@ -1107,11 +1124,13 @@
         hubConnection.On<Issue>("IdentifiedThreat", IdentifiedThreat);
     }
 
-    async void CreatedSessionPrivate(Player player, string sessionId)
+    async void CreatedSessionPrivate(Player player, string sessionId, Deck.DeckType deckType)
     {
         Console.WriteLine($"session created: {sessionId}");
         this.player.UserId = player.UserId;
         this.player.SessionIdHash = sessionId;
+        this.suits = deckType.GetSuits();
+        this.trumpSuit = deckType.GetTrumpSuit();
         if (ownerPlaying)
         {
             players.Add(await DecryptString(this.player.NameEncrypted));
@@ -1136,11 +1155,13 @@
         StateHasChanged();
     }
 
-    async void JoinedSessionPrivate(Player player, List<string> players, List<string> spectators)
+    async void JoinedSessionPrivate(Player player, List<string> players, List<string> spectators, Deck.DeckType deckType)
     {
         Console.WriteLine($"session joined succesfully.");
         insession = true;
         this.players = new List<string>();
+        this.suits = deckType.GetSuits();
+        this.trumpSuit = deckType.GetTrumpSuit();
         foreach (var p in players) {
             this.players.Add(await DecryptString(p));
         }
@@ -1179,6 +1200,8 @@
         this.riffing = publicData.Riffing;
         this.player.UserId = player.UserId;
         this.playedCards = publicData.CurrentlyPlayedCards.ToList();
+        this.suits = publicData.DeckType.GetSuits();
+        this.trumpSuit = publicData.DeckType.GetTrumpSuit();
         foreach (var iss in publicData.Issues)
         {
             issuesCommon.TryAdd(iss.Key, await DecryptString(iss.Key.EncryptedThreat));
@@ -1344,7 +1367,8 @@
         if (string.IsNullOrEmpty(name)) return;
         createPressed = DateTime.Now;
         player.NameEncrypted = await EncryptString(name);
-        await hubConnection.SendAsync("CreateSession", player, ownerPlaying);
+        Console.WriteLine(deckType);
+        await hubConnection.SendAsync("CreateSession", player, ownerPlaying, deckType);
     }
 
     async void StartSession()
@@ -1365,7 +1389,7 @@
     async Task<string> EncryptString(string toEncrypt)
     {
         var ret = await JSRuntime.InvokeAsync<byte[]>(
-            "encryptUsingSubtleCrypto", 
+            "encryptUsingSubtleCrypto",
             sessionID.ConvertHexStringToByteArray(),
              System.Text.UnicodeEncoding.UTF8.GetBytes(toEncrypt)
         );

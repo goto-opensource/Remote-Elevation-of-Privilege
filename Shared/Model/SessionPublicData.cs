@@ -14,6 +14,7 @@ namespace rEoP.Shared.Model
         public string RoundWinner { get; set; }
         public Card RoundWinnerCard { get; set; }
         public Card RaisedCard { get; set; }
+        public Deck.DeckType DeckType { get; set; }
         [System.Text.Json.Serialization.JsonConverter(typeof(ConcurrentDictionaryConverter<Issue>))]
         public ConcurrentDictionary<Issue, object> Issues { get; set; }
 
@@ -21,7 +22,7 @@ namespace rEoP.Shared.Model
         {
         }
 
-        public SessionPublicData(List<string> enumerable1, List<string> enumerable2, bool riffing, HashSet<Card> currentlyPlayedCards, Player currentPlayer, Suit currentSuit, (Player, Card)? roundWinner, Card raisedCard, ConcurrentDictionary<Issue, object> issues)
+        public SessionPublicData(List<string> enumerable1, List<string> enumerable2, bool riffing, HashSet<Card> currentlyPlayedCards, Player currentPlayer, Suit currentSuit, (Player, Card)? roundWinner, Card raisedCard, ConcurrentDictionary<Issue, object> issues, Deck.DeckType deckType)
         {
             this.Players = enumerable1;
             this.Spectators = enumerable2;
@@ -36,6 +37,7 @@ namespace rEoP.Shared.Model
             }
             this.RaisedCard = raisedCard;
             this.Issues = new ConcurrentDictionary<Issue, object>(issues);
+            this.DeckType = deckType;
         }
     }
 }

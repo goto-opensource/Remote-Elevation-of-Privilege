@@ -4,7 +4,11 @@ Announcement: https://blog.logmeininc.com/logmein-releases-open-source-remote-el
 
 Backend: .NET Core
 
-Frontend: .NET Core - Blazor WASM PWA - [Card/deck assets](https://www.thegamecrafter.com/games/elevation-of-privilege) by Microsoft under [CC3.0](https://creativecommons.org/licenses/by/3.0/)
+Frontend: .NET Core - Blazor WASM PWA
+
+Assets:
+* [REOP cards/deck assets](https://github.com/adamshostack/eop) by Microsoft under [CC-BY-3.0](https://creativecommons.org/licenses/by/3.0/)
+* [Cornucopia cards/deck assets](https://owasp.org/www-project-cornucopia/) by OWASP Foundation under [Creative Commons Attribution-ShareAlike 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
 
 "Supported" browser: Chrome
 
@@ -29,7 +33,7 @@ In the Startup.cs file, commented out You can find Let's Encrypt and REDIS suppo
 
 * Click 'Create Session' 
 
-* You'll be prompted to enter your player name, and a checkbox to either join the game as a participant or only as a moderator. Finish by clicking 'Create a Session'. 
+* You'll be prompted to enter your player name, and a checkbox to either join the game as a participant or only as a moderator. Select game mode: REOP or Cornucopia. Finish by clicking 'Create a Session'. 
 
 * Once your session is ready, you'll be given the option to 'Copy Session ID' to share with 3-6 players on another channel. The content of the session, whiteboard and player names are transmitted with end-to-end encryption utilizing this ID - the encryption key never leaves the client side of the game, only its hash.  
 
