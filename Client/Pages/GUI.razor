@@ -1131,6 +1131,7 @@
         this.player.SessionIdHash = sessionId;
         this.suits = deckType.GetSuits();
         this.trumpSuit = deckType.GetTrumpSuit();
+        this.deckType = deckType;
         if (ownerPlaying)
         {
             players.Add(await DecryptString(this.player.NameEncrypted));
@@ -1162,6 +1163,7 @@
         this.players = new List<string>();
         this.suits = deckType.GetSuits();
         this.trumpSuit = deckType.GetTrumpSuit();
+        this.deckType = deckType;
         foreach (var p in players) {
             this.players.Add(await DecryptString(p));
         }
@@ -1200,6 +1202,7 @@
         this.riffing = publicData.Riffing;
         this.player.UserId = player.UserId;
         this.playedCards = publicData.CurrentlyPlayedCards.ToList();
+        this.deckType = publicData.DeckType;
         this.suits = publicData.DeckType.GetSuits();
         this.trumpSuit = publicData.DeckType.GetTrumpSuit();
         foreach (var iss in publicData.Issues)
