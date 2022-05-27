@@ -263,10 +263,13 @@ namespace rEoP.Shared.Model
         {
             using var rnd = new RNGCryptoServiceProvider();
             var buf = new byte[2];
-            for (var i = this.Count; i > 0; i--)
+            for (var shuffles = 0; shuffles < 3; shuffles++)
             {
-                rnd.GetBytes(buf);
-                this.Swap(buf[0] % this.cards.Count, buf[1] % this.cards.Count);
+                for (var i = this.Count; i > 0; i--)
+                {
+                    rnd.GetBytes(buf);
+                    this.Swap(buf[0] % this.cards.Count, buf[1] % this.cards.Count);
+                }
             }
         }
 

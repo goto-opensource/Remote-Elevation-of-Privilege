@@ -354,7 +354,7 @@ namespace rEoP.Server.Hubs
                     {
                         var player = session.Players[i];
                         await this.Clients.User(player.UserId).SendAsync("StartedSessionPrivate", player.Hand);
-                        if (player.First)
+                        if (session.Deck.Type == Deck.DeckType.REOP && player.First)
                         {
                             session.CurrentPlayer = player;
                             await this.Clients.Group(owner.SessionIdHash).SendAsync("CurrentPlayer", i % session.Players.Count);

@@ -274,7 +274,7 @@
     @if (forcingSuit)
     {
         var i = 0;
-        <div @onclick="() => { forcingSuit = false; StateHasChanged(); }" id="forceSuitModal" style="display: block; position: absolute; z-index: 3; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); ">
+        <div id="forceSuitModal" style="display: block; position: absolute; z-index: 3; left: 0%; top: 0vh; width: 100%; height: 100vh; overflow: auto; background-color: rgb(0,0,0); background-color: rgba(0,0,0,0.4); ">
             <div class="c-layer" style="background-color: #fefefe; height:60%; margin: 5% 5%; border: 1px solid #888; width: 90%; border-radius: 15px;">
                 @foreach (Suit suit in suits)
                 {
@@ -1034,7 +1034,7 @@
     private bool simplifiedMode = false;
     private string comment = "";
     private string actualUserid = "";
-    private Suit currentSuit;
+    private Suit currentSuit = Suit.Tampering;
     private Suit trumpSuit;
     private ConcurrentDictionary<Issue, string> issues = new ConcurrentDictionary<Issue, string>();
     private ConcurrentDictionary<Issue, string> issuesCommon = new ConcurrentDictionary<Issue, string>();
@@ -1072,8 +1072,18 @@
         hubConnection.KeepAliveInterval = TimeSpan.FromSeconds(5);
 
         RegisterEventCallbacks(hubConnection);
+        hubConnection.Closed += AutoReconnect;
 
         await hubConnection.StartAsync();
+    }
+
+    async Task AutoReconnect(Exception e)
+    {
+        if (e is not null){
+            Console.WriteLine("Connection lost, trying to automatically reconnect.");
+            await TryRefresh();
+        }
+        return;
     }
 
     void RegisterEventCallbacks(HubConnection hubConnection)
@@ -1544,7 +1554,7 @@
         hub.KeepAliveInterval = TimeSpan.FromSeconds(5);
 
         RegisterEventCallbacks(hub);
-
+        hub.Closed += AutoReconnect;
         await hub.StartAsync();
         hubConnection = hub;
         Console.WriteLine("restarted");
