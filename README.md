@@ -15,7 +15,7 @@ Assets:
 # How to setup and play
 
 ## Prerequisites
-- [latest .NET Core 3.1 LTS SDK](https://dotnet.microsoft.com/download/dotnet-core/3.1)
+- [latest .NET 6 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 - internet access (to download NuGet packages)
 
 ## Starting the server
