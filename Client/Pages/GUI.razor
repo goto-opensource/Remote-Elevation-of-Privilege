@@ -1313,9 +1313,12 @@
                                     (json);
         foreach (var m in moves)
         {
-            if (m.MoveType == MoveType.Raise || m.MoveType == MoveType.Riff || m.MoveType == MoveType.Award)
+            if (m.MoveType != MoveType.ForceSuit)
             {
                 m.Player = await DecryptString(m.Player);
+            }            
+            if (m.MoveType == MoveType.Raise || m.MoveType == MoveType.Riff || m.MoveType == MoveType.Award)
+            {
                 m.Comment = await DecryptString(m.Comment);
             }
         }
